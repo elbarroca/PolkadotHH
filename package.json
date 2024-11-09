@@ -1,0 +1,56 @@
+{
+  "name": "polkadrive",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "react": "19.0.0-rc-66855b96-20241106",
+    "react-dom": "19.0.0-rc-66855b96-20241106",
+    "next": "15.0.3",
+    "ethers": "^6.11.1",
+    "web3": "^4.5.0",
+    "@walletconnect/web3-provider": "^2.11.2",
+    "@web3modal/ethereum": "^3.1.0",
+    "@web3modal/react": "^3.1.0",
+    "wagmi": "^2.5.7",
+    "viem": "^2.7.9",
+    "crypto-js": "^4.2.0",
+    "@types/crypto-js": "^4.2.1",
+    "uuid": "^9.0.1",
+    "@types/uuid": "^9.0.7",
+    "formidable": "^3.5.1",
+    "next-connect": "^1.0.0",
+    "@types/formidable": "^3.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "eslint": "^8",
+    "eslint-config-next": "15.0.3",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "@testing-library/jest-dom": "^6.1.5",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    },
+    "testMatch": [
+      "**/__tests__/**/*.ts?(x)",
+      "**/?(*.)+(spec|test).ts?(x)"
+    ]
+  }
+}
