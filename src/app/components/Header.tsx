@@ -1,3 +1,5 @@
+'use client'
+
 import { useWallet } from '../contexts/WalletProvider';
 import { useState } from 'react';
 

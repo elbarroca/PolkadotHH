@@ -7,6 +7,13 @@ import React, { createContext, useContext, useRef, useState, useCallback } from 
 import { NETWORKS } from '../config/cereNetwork';
 import { AccountInfo } from '@polkadot/types/interfaces';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
+import { 
+    addLocalExtension, 
+    getLocalActiveAccount, 
+    setLocalActiveAccount, 
+    removeLocalActiveAccount, 
+    removeLocalExtension 
+} from '../localStorage';
 
 export interface ImportedAccount {
   address: string;
@@ -27,7 +34,6 @@ export interface WalletContextInterface {
   accounts: ImportedAccount[];
 }
 
-const APP_NAME = 'Cere Network dApp';
 
 const defaultContext: WalletContextInterface = {
   connectWallet: async () => ({ address: '', network: '' }),
@@ -77,41 +83,44 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const connectWallet = useCallback(async () => {
     try {
       // Enable all extensions
-      const injectedExtensions = await web3Enable(APP_NAME);
+      const injectedExtensions = await web3Enable('PolkaDrive');
       if (!injectedExtensions.length) {
         throw new Error('No extension found');
       }
+      
+      // Save extensions to local storage
+      injectedExtensions.forEach(ext => addLocalExtension(ext.name));
       setExtensions(injectedExtensions);
-
-      // Get all accounts
+  
       const allAccounts = await web3Accounts();
-      console.log(allAccounts)
       const formattedAccounts: ImportedAccount[] = allAccounts.map(account => ({
         address: account.address,
         name: account.meta.name || undefined,
         source: account.meta.source || 'unknown',
         signer: account.meta.source
       }));
-
+  
       setAccounts(formattedAccounts);
       accountsRef.current = formattedAccounts;
-
-      // Set first account as active if none selected
-      if (!activeAccount && formattedAccounts.length > 0) {
-        setActiveAccount(formattedAccounts[0].address);
-        activeAccountRef.current = formattedAccounts[0].address;
+  
+      // Check for previously active account
+      const network = activeNetwork || 'cereMainnet';
+      const savedAccount = getLocalActiveAccount(network);
+      const accountToUse = savedAccount || formattedAccounts[0]?.address;
+  
+      if (accountToUse) {
+        setActiveAccount(accountToUse);
+        activeAccountRef.current = accountToUse;
+        setLocalActiveAccount(network, accountToUse);
       }
-
-      console.log(activeAccount)
-
-      // Initialize API if not already done
+  
       if (!api) {
-        await initializeApi('cereMainnet'); // Default to mainnet
+        await initializeApi('cereMainnet');
       }
-
+  
       return {
-        address: formattedAccounts[0].address,
-        network: activeNetwork || 'cereMainnet'
+        address: accountToUse || '',
+        network: network
       };
     } catch (error) {
       console.error('Failed to connect wallet:', error);
@@ -124,10 +133,17 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       await api.disconnect();
       setApi(null);
     }
+    
+    if (activeNetwork && activeAccount) {
+      removeLocalActiveAccount(activeNetwork);
+    }
+    
+    extensions.forEach(ext => removeLocalExtension(ext.name));
+    
     setActiveAccount(null);
     setAccounts([]);
     setExtensions([]);
-  }, [api]);
+  }, [api, activeNetwork, activeAccount, extensions]);
 
   const switchNetwork = useCallback(async (networkKey: string) => {
     if (api) {
