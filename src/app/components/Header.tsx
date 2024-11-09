@@ -1,8 +1,31 @@
-import { HeaderProps } from '../../../types';
+import { useWallet } from '../contexts/WalletProvider';
+import { useState } from 'react';
 
-export const Header = ({ walletAddress, onConnect, onDisconnect }: HeaderProps) => {
+export const Header = () => {
+  const { connectWallet, disconnectWallet, activeAccount } = useWallet();
+  const [isConnecting, setIsConnecting] = useState(false);
+
   const truncateAddress = (address: string) => 
     `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+  const handleConnect = async () => {
+    try {
+      setIsConnecting(true);
+      await connectWallet();
+    } catch (error) {
+      console.error('Failed to connect:', error);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      await disconnectWallet();
+    } catch (error) {
+      console.error('Failed to disconnect:', error);
+    }
+  };
 
   return (
     <header className="w-full px-6 py-4 bg-gray-900 shadow-lg">
@@ -12,13 +35,13 @@ export const Header = ({ walletAddress, onConnect, onDisconnect }: HeaderProps) 
         </h1>
         
         <div className="flex items-center space-x-4">
-          {walletAddress ? (
+          {activeAccount ? (
             <div className="flex items-center space-x-4">
               <span className="text-gray-300">
-                {truncateAddress(walletAddress)}
+                {truncateAddress(activeAccount)}
               </span>
               <button
-                onClick={onDisconnect}
+                onClick={handleDisconnect}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 
                          text-white rounded-lg transition-colors"
                 aria-label="Disconnect wallet"
@@ -28,16 +51,18 @@ export const Header = ({ walletAddress, onConnect, onDisconnect }: HeaderProps) 
             </div>
           ) : (
             <button
-              onClick={onConnect}
+              onClick={handleConnect}
+              disabled={isConnecting}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 
-                       text-white rounded-lg transition-colors"
+                       text-white rounded-lg transition-colors
+                       disabled:bg-blue-400 disabled:cursor-not-allowed"
               aria-label="Connect wallet"
             >
-              Connect Wallet
+              {isConnecting ? 'Connecting...' : 'Connect Wallet'}
             </button>
           )}
         </div>
       </div>
     </header>
   );
-}; 
+};

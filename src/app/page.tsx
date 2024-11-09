@@ -1,22 +1,20 @@
+'use client';
+
 import { useState } from 'react';
 import { Header } from './components/Header';
-import { useWallet } from '../../hooks/useWallet';
 import { UploadModal } from './components/UploadModal';
+import { useWallet } from './contexts/WalletProvider';
 
 export default function Home() {
-  const { address, isConnected, connect, disconnect } = useWallet();
+  const { activeAccount } = useWallet();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header 
-        walletAddress={address}
-        onConnect={connect}
-        onDisconnect={disconnect}
-      />
+      <Header />
       
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {isConnected ? (
+        {activeAccount ? (
           <div className="space-y-8">
             <div className="flex justify-end">
               <button
@@ -32,10 +30,10 @@ export default function Home() {
             <UploadModal
               isOpen={isUploadModalOpen}
               onClose={() => setIsUploadModalOpen(false)}
-              walletAddress={address!}
+              walletAddress={activeAccount}
               onUploadComplete={(metadata) => {
-                // Handle successful upload
                 console.log('File uploaded:', metadata);
+                setIsUploadModalOpen(false);
               }}
             />
           </div>
@@ -49,4 +47,4 @@ export default function Home() {
       </main>
     </div>
   );
-} 
+}
