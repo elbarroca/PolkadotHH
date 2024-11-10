@@ -6,7 +6,12 @@ import { useState } from 'react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 
-export const Header = () => {
+interface HeaderProps {
+  onSearch: (query: string) => void;
+  searchQuery: string;
+}
+
+export const Header = ({ onSearch, searchQuery }: HeaderProps) => {
   const { connectWallet, disconnectWallet, activeAccount } = useWallet();
   const [isConnecting, setIsConnecting] = useState(false);
 
@@ -33,28 +38,38 @@ export const Header = () => {
   };
 
   return (
-    <header className="flex items-center justify-between border-b px-6 py-4">
-      <div className="flex items-center space-x-4">
-        <Folder className="h-8 w-8 text-blue-500" />
-        <h1 className="text-2xl font-bold">PolkaDrive</h1>
+    <header className="flex items-center justify-between border-b border-gray-800 bg-gray-900 px-10 py-6">
+      <div className="flex items-center space-x-6">
+        <div className="relative group">
+          <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-700 opacity-50 blur group-hover:opacity-75 transition duration-200"></div>
+          <Folder className="relative h-12 w-12 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-100">PolkaDrive</h1>
       </div>
-      <div className="flex-1 px-6">
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search files" className="pl-8" />
+      
+      <div className="flex-1 px-8">
+        <div className="relative group max-w-2xl mx-auto">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-hover:text-emerald-400 transition-colors" />
+          <Input 
+            placeholder="Search files" 
+            className="w-full pl-11 bg-gray-800 border-gray-700 text-gray-200 placeholder:text-gray-500 focus:border-emerald-500 hover:border-gray-600 transition-all"
+            onChange={(e) => onSearch(e.target.value)}
+            value={searchQuery}
+          />
         </div>
       </div>
+
       {activeAccount ? (
-        <div className="flex items-center space-x-4">
-          <span className="text-gray-600">
-            {`${activeAccount.slice(0, 6)}...${activeAccount.slice(-4)}`}
+        <div className="flex items-center space-x-5">
+          <span className="text-gray-400 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
+            {truncateAddress(activeAccount)}
           </span>
           <Button
-            variant="destructive"
+            variant="outline"
             onClick={handleDisconnect}
-            className="text-sm"
+            className="text-sm border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-emerald-400 transition-all duration-200"
           >
-            <Wallet className="mr-2 h-4 w-4" />
+            <Wallet className="mr-2 h-5 w-5" />
             Disconnect
           </Button>
         </div>
@@ -63,9 +78,9 @@ export const Header = () => {
           variant="default"
           onClick={handleConnect}
           disabled={isConnecting}
-          className="text-sm"
+          className="text-sm bg-emerald-500 hover:bg-emerald-600 text-white px-6 transform hover:scale-105 transition-all duration-200"
         >
-          <Wallet className="mr-2 h-4 w-4" />
+          <Wallet className="mr-2 h-5 w-5" />
           {isConnecting ? "Connecting..." : "Connect Wallet"}
         </Button>
       )}
