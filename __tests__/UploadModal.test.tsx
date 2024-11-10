@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { UploadModal } from '../src/app/components/UploadModal';
+import { UploadModal } from '../src/components/UploadModal';
 import { EncryptionService } from '../utils/encryption';
 import { UploadService } from '../services/uploadService';
 

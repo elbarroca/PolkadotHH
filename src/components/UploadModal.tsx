@@ -1,8 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { UploadModalProps, FileMetadata } from '../../../types';
-import { EncryptionService } from '../../../utils/encryption';
-import { UploadService } from '../../../services/uploadService';
+import { UploadModalProps, FileMetadata } from '../../types';
+import { EncryptionService } from '../../utils/encryption';
+import { UploadService } from '../../services/uploadService';
 import { v4 as uuidv4 } from 'uuid';
+import { Dialog, DialogTitle } from '@radix-ui/react-dialog';
+import { Upload } from 'lucide-react';
+import { DialogContent, DialogHeader } from './ui/dialog';
+import { Button } from './ui/button';
 
 export const UploadModal = ({ 
   isOpen, 
@@ -66,7 +70,6 @@ export const UploadModal = ({
       reader.readAsArrayBuffer(file);
     });
   };
-
   const handleUpload = async () => {
     if (!file) {
       setError('Please select a file first');
@@ -159,80 +162,39 @@ export const UploadModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Upload File
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-            aria-label="Close modal"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-              className="hidden"
-              accept="*/*"
-            />
-            <button
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload File</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
+                accept="*/*"
+              />
+            <Button
+              variant="outline"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full py-2 px-4 text-sm text-gray-600 hover:text-gray-800
-                       focus:outline-none focus:ring-2 focus:ring-offset-2 
-                       focus:ring-blue-500"
+              className="w-full"
               disabled={isLoading}
             >
               {file ? (
-                <span className="flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
+                <span className="flex items-center">
+                  <Upload className="mr-2 h-4 w-4" />
                   {file.name}
                 </span>
               ) : (
-                <span className="flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path d="M12 4v16m8-8H4"></path>
-                  </svg>
+                <span className="flex items-center">
+                  <Upload className="mr-2 h-4 w-4" />
                   Choose a file or drag it here
                 </span>
               )}
-            </button>
-          </div>
+            </Button>
+            </div>
 
           {(uploadProgress > 0 || encryptionProgress > 0 || serverUploadProgress > 0) && (
             <div className="space-y-2">
@@ -280,27 +242,18 @@ export const UploadModal = ({
             </div>
           )}
 
-          <div className="flex justify-end space-x-3">
-            <button
+
+<div className="flex justify-end space-x-3">
+            <Button
+              variant="outline"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 
-                       bg-gray-100 hover:bg-gray-200 rounded-lg
-                       focus:outline-none focus:ring-2 focus:ring-offset-2 
-                       focus:ring-gray-500"
               disabled={isLoading}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleUpload}
               disabled={!file || isLoading}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-lg
-                       focus:outline-none focus:ring-2 focus:ring-offset-2 
-                       focus:ring-blue-500 ${
-                         !file || isLoading
-                           ? 'bg-blue-400 cursor-not-allowed'
-                           : 'bg-blue-600 hover:bg-blue-700'
-                       }`}
             >
               {isLoading ? (
                 <span className="flex items-center">
@@ -328,10 +281,10 @@ export const UploadModal = ({
               ) : (
                 'Upload'
               )}
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
-}; 
+}

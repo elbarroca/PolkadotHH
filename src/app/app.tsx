@@ -1,5 +1,5 @@
 import type { AppProps } from 'next/app';
-import { WalletProvider } from './contexts/WalletProvider';
+import { WalletProvider } from '../contexts/WalletProvider';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
