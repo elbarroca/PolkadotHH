@@ -8,12 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { 
-  Folder, 
-  File, 
-  Search, 
-  Clock, 
-  Star, 
-  Trash, 
+  Folder as FolderIcon, 
   Users, 
   Wallet,
   Upload,
@@ -26,24 +21,8 @@ import { FileCard } from '../components/FileCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { v4 as uuidv4 } from 'uuid';
 import { SharedDashboard } from '../components/SharedDashboard';
-
-interface FileItem {
-  id: string;
-  title: string;
-  imageUrl: string;
-  size: string;
-  uploadedBy?: string;
-  description?: string;
-  folderId: string | null;
-  name: string;
-  starred?: boolean;
-}
-
-interface Folder {
-  id: string;
-  name: string;
-  files: FileItem[];
-}
+import { FileMetadata, Folder } from 'types';
+import { FileItem } from '@/types';
 
 const DUMMY_FILES = [
   {
@@ -93,10 +72,18 @@ export default function Home() {
 
   const filteredFiles = useMemo(() => {
     return files.filter(file => 
-      file.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      file.title.toLowerCase().includes(searchQuery.toLowerCase())
+      file.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [files, searchQuery]);
+
+  const handleCreateFolder = (folderName: string) => {
+    const newFolder: Folder = {
+      id: uuidv4(),
+      name: folderName,
+      files: []
+    };
+    setFolders(prev => [...prev, newFolder]);
+  };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -123,6 +110,19 @@ export default function Home() {
     fileIcon: "h-12 w-12 text-emerald-400 transform transition-transform hover:scale-110 duration-200",
     fileCard: "flex flex-col items-center space-y-2 rounded-lg border p-4 hover:bg-emerald-50 transition-all duration-200 hover:shadow-lg hover:border-emerald-200",
     uploadButton: "bg-emerald-500 hover:bg-emerald-600 text-white transition-all duration-200 hover:shadow-lg",
+  };
+
+  const handleUploadComplete = async (metadata: FileMetadata) => {
+    console.log('File uploaded:', metadata);
+    setIsUploadModalOpen(false);
+    
+    if (refetchFolders) {
+      try {
+        await refetchFolders();
+      } catch (error) {
+        console.error('Failed to refresh folders:', error);
+      }
+    }
   };
 
   const handleConnect = async () => {
@@ -277,7 +277,7 @@ export default function Home() {
                         setSelectedFolder(null);
                       }}
                     >
-                      <Folder className="mr-4 h-8 w-8 text-emerald-400" />
+                      <FolderIcon className="mr-4 h-8 w-8 text-emerald-400" />
                       My Drive
                     </Button>
 
@@ -294,7 +294,7 @@ export default function Home() {
                           }`}
                           onClick={() => setSelectedFolder(folder.id)}
                         >
-                          <Folder className="mr-2 h-5 w-5" />
+                          <FolderIcon className="mr-2 h-5 w-5" />
                           <span className="truncate">{folder.name}</span>
                           <span className="ml-auto text-xs text-gray-500">
                             {folder.files.length} files
@@ -458,18 +458,7 @@ export default function Home() {
         onClose={() => setIsUploadModalOpen(false)}
         walletAddress={activeAccount ?? ''}
         folders={folders}
-        onUploadComplete={async (metadata) => {
-          console.log('File uploaded:', metadata);
-          setIsUploadModalOpen(false);
-          // Refresh folders list after upload
-          if (refetchFolders) {
-            try {
-              await refetchFolders();
-            } catch (error) {
-              console.error('Failed to refresh folders:', error);
-            }
-          }
-        }}
+        onUploadComplete={handleUploadComplete}
       />
       <AddFolderModal 
         isOpen={isAddFolderModalOpen} 

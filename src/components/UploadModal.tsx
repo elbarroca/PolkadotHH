@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { UploadModalProps, FileMetadata } from '../../types';
-import { EncryptionService } from '../../utils/encryption';
-import { UploadService } from '../../services/uploadService';
+import { UploadModalProps, FileMetadata, Folder } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 import { Upload } from 'lucide-react';
 import {
@@ -14,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useFileManager } from '@/hooks/useFileManager';
 
 export const UploadModal: React.FC<UploadModalProps> = ({
   isOpen, 
@@ -25,16 +24,15 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [encryptionProgress, setEncryptionProgress] = useState(0);
   const encryptionKey = useRef<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingToServer, setUploadingToServer] = useState(false);
-  const [serverUploadProgress, setServerUploadProgress] = useState(0);
   const uploadId = useRef<string>(uuidv4());
   const [fileName, setFileName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('');
+
+  const { uploadFile } = useFileManager();
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -70,17 +68,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       reader.onerror = () => {
         reject(new Error('Error reading file'));
       };
-      
-      reader.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const progress = (event.loaded / event.total) * 100;
-          setUploadProgress(Math.round(progress));
-        }
-      };
-      
+            
       reader.readAsArrayBuffer(file);
     });
   };
+
   const handleUpload = async () => {
     if (!file) {
       setError('Please select a file first');
@@ -91,45 +83,19 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setError(null);
     
     try {
-      // Read and encrypt file
-      const arrayBuffer = await readFileAsArrayBuffer(file);
-      setEncryptionProgress(25);
+      // Upload file using FileManager
+      const fileMetadata = await uploadFile(file);
 
-      encryptionKey.current = EncryptionService.generateEncryptionKey();
-      const encryptedData = await EncryptionService.encryptFile(
-        arrayBuffer,
-        encryptionKey.current
-      );
-      setEncryptionProgress(75);
-
-      // Upload to server
-      setUploadingToServer(true);
-      const uploadResponse = await UploadService.uploadEncryptedFile(
-        encryptedData,
-        {
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          uploadedBy: walletAddress,
-        }
-      );
-
-      // Create file metadata
-      const fileMetadata: FileMetadata = {
-        id: uploadId.current,
-        name: file.name,
-        size: file.size,
-        uploadedBy: walletAddress,
-        uploadedAt: new Date(),
-        encryptionKey: encryptionKey.current,
-        authorizedUsers: [walletAddress],
-        cid: uploadResponse.cid,
+      // Update metadata with additional info
+      const updatedMetadata: FileMetadata = {
+        ...fileMetadata,
+        name: fileName || file.name,
+        description: description,
+        folderId: selectedFolder || null
       };
-
-      setEncryptionProgress(100);
       
       if (onUploadComplete) {
-        onUploadComplete(fileMetadata);
+        onUploadComplete(updatedMetadata);
       }
       
       onClose();
@@ -137,38 +103,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       setError(error instanceof Error ? error.message : 'Failed to process file');
     } finally {
       setIsLoading(false);
-      setUploadProgress(0);
-      setEncryptionProgress(0);
-      setUploadingToServer(false);
-      setServerUploadProgress(0);
     }
   };
-
-  // Progress polling
-  useEffect(() => {
-    let pollInterval: NodeJS.Timeout;
-
-    if (uploadingToServer) {
-      pollInterval = setInterval(async () => {
-        try {
-          const progress = await UploadService.getUploadProgress(uploadId.current);
-          setServerUploadProgress(progress);
-
-          if (progress === 100) {
-            clearInterval(pollInterval);
-          }
-        } catch (error) {
-          console.error('Error polling upload progress:', error);
-        }
-      }, 1000);
-    }
-
-    return () => {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-      }
-    };
-  }, [uploadingToServer]);
 
   if (!isOpen) return null;
 
@@ -266,23 +202,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             </Button>
           </div>
 
-          {uploadProgress > 0 && (
             <div className="space-y-2 bg-gray-800/50 p-4 rounded-lg border border-gray-700">
               <div className="flex justify-between text-sm text-gray-400">
                 <span className="flex items-center gap-2">
                   <div className="animate-spin h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full" />
                   Uploading...
                 </span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
               </div>
             </div>
-          )}
         </div>
 
         <div className="flex justify-end space-x-4 mt-6">
@@ -330,5 +257,5 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         </div>
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}

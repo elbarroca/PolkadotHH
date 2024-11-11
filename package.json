@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@cere-ddc-sdk/ddc-client": "^2.13.0",
     "@ethersproject/providers": "^5.7.2",
     "@polkadot/api": "^9.9.4",
     "@polkadot/extension-dapp": "^0.56.1",

@@ -4,38 +4,36 @@ export interface FileMetadata {
   size: number;
   uploadedBy: string;
   uploadedAt: Date;
-  encryptionKey?: string;
   authorizedUsers: string[];
-  cid: string; // IPFS Content Identifier
+  cid: string;
+  mimeType: string;
+  description?: string;
+  folderId?: string | null;
 }
 
-export interface WalletState {
-  address: string | null;
-  isConnected: boolean;
-  chainId: number | null;
-  balance: string | null;
-  connect: () => Promise<void>;
-  connectWithWalletConnect: () => Promise<void>;
-  disconnect: () => Promise<void>;
-  error: string | null;
-  connectionType: 'metamask' | 'walletconnect' | null;
-}
-
-export interface FileUploadState {
-  file: File | null;
-  progress: number;
-  error: string | null;
-  isLoading: boolean;
+export interface Folder {
+  id: string;
+  name: string;
+  files: FileMetadata[];
 }
 
 export interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUploadComplete?: (fileMetadata: FileMetadata) => void;
+  walletAddress: string;
+  folders: Folder[];
 }
 
-export interface HeaderProps {
-  walletAddress: string | null;
-  onConnect: () => Promise<void>;
-  onDisconnect: () => Promise<void>;
-} 
+export interface FileUploadState {
+  file: File | null;
+  progress: {
+    upload: number;
+    server: number;
+  };
+  error: string | null;
+  isLoading: boolean;
+  fileName: string;
+  description: string;
+  selectedFolder: string;
+}

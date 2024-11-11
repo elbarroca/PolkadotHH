@@ -14,6 +14,8 @@ import {
     removeLocalActiveAccount, 
     removeLocalExtension 
 } from '../localStorage';
+import { Web3Signer } from '@cere-ddc-sdk/blockchain';
+import { encodeAddress, decodeAddress } from '@polkadot/util-crypto';
 
 export interface ImportedAccount {
   address: string;
@@ -32,8 +34,8 @@ export interface WalletContextInterface {
   activeAccount: string | null;
   activeNetwork: string | null;
   accounts: ImportedAccount[];
+  web3Signer: Web3Signer | null; // Change from signer to web3Signer
 }
-
 
 const defaultContext: WalletContextInterface = {
   connectWallet: async () => ({ address: '', network: '' }),
@@ -45,6 +47,7 @@ const defaultContext: WalletContextInterface = {
   activeAccount: null,
   activeNetwork: null,
   accounts: [],
+  web3Signer: null,
 };
 
 const WalletContext = createContext<WalletContextInterface>(defaultContext);
@@ -57,11 +60,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [activeAccount, setActiveAccount] = useState<string | null>(null);
   const [activeNetwork, setActiveNetwork] = useState<string | null>(null);
   const [extensions, setExtensions] = useState<InjectedExtension[]>([]);
+  const [web3Signer, setWeb3Signer] = useState<Web3Signer | null>(null); // State for Web3Signer
 
   const accountsRef = useRef(accounts);
   const activeAccountRef = useRef(activeAccount);
 
-  // Initialize connection to network
   const initializeApi = async (networkKey: string) => {
     const network = NETWORKS[networkKey];
     if (!network) throw new Error('Network not supported');
@@ -82,13 +85,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const connectWallet = useCallback(async () => {
     try {
-      // Enable all extensions
       const injectedExtensions = await web3Enable('PolkaDrive');
       if (!injectedExtensions.length) {
         throw new Error('No extension found');
       }
       
-      // Save extensions to local storage
       injectedExtensions.forEach(ext => addLocalExtension(ext.name));
       setExtensions(injectedExtensions);
   
@@ -103,15 +104,19 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setAccounts(formattedAccounts);
       accountsRef.current = formattedAccounts;
   
-      // Check for previously active account
-      const network = activeNetwork || 'cereMainnet';
-      const savedAccount = getLocalActiveAccount(network);
-      const accountToUse = savedAccount || formattedAccounts[0]?.address;
+      const network = 'cereMainnet';
+      const accountToUse = formattedAccounts[0]?.address;
   
       if (accountToUse) {
         setActiveAccount(accountToUse);
         activeAccountRef.current = accountToUse;
         setLocalActiveAccount(network, accountToUse);
+        const activeExtension = injectedExtensions.find(ext => ext.signer && ext.signer.signRaw);
+        if (activeExtension) {
+          const signerInstance = new Web3Signer();
+          await signerInstance.connect();
+          setWeb3Signer(signerInstance); 
+        }
       }
   
       if (!api) {
@@ -127,6 +132,23 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       throw error;
     }
   }, [api, activeAccount]);
+  
+const convertAddress = (address: string, expectedFormat: number) => {
+  try {
+    const decoded = decodeAddress(address, true, 54);
+    const ss58Format = decoded[0]; // Get the SS58 format from the decoded address
+
+    if (ss58Format !== expectedFormat) {
+      // Convert to the expected format
+      return encodeAddress(decoded, expectedFormat);
+    }
+
+    return address; // Return the original address if it matches
+  } catch (error) {
+    console.error('Invalid address:', error);
+    throw new Error('Invalid address format');
+  }
+};
 
   const disconnectWallet = useCallback(async () => {
     if (api) {
@@ -143,6 +165,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setActiveAccount(null);
     setAccounts([]);
     setExtensions([]);
+    setWeb3Signer(null); // Reset the Web3Signer on disconnect
   }, [api, activeNetwork, activeAccount, extensions]);
 
   const switchNetwork = useCallback(async (networkKey: string) => {
@@ -158,7 +181,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
         const result = await api.query.system.account<AccountInfo>(address);
         const accountInfo = result as unknown as { data: AccountData };
-        console.log('accountInfo', accountInfo)
         return accountInfo.data.free.toString();
     } catch (error) {
       console.error('Failed to fetch balance:', error);
@@ -167,23 +189,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [api]);
 
   const signMessage = useCallback(async (message: string) => {
-    if (!activeAccount || !extensions.length) {
-      throw new Error('No active account or extension');
+    if (!activeAccount || !web3Signer) {
+      throw new Error('No active account or Web3Signer available');
     }
 
-    const extension = extensions[0];
-    const signer = extension?.signer;
-    
-    if (!signer || !signer.signRaw) throw new Error('No signer available');
+    const signature = await web3Signer.sign(message); // Use the Web3Signer instance
 
-    const { signature } = await signer.signRaw({
-      address: activeAccount,
-      data: message,
-      type: 'bytes'
-    });
-
-    return signature;
-  }, [activeAccount, extensions]);
+    return signature.toString();
+  }, [activeAccount, web3Signer]);
 
   return (
     <WalletContext.Provider
@@ -197,6 +210,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         activeAccount,
         activeNetwork,
         accounts,
+        web3Signer, // Provide the Web3Signer instance
       }}
     >
       {children}

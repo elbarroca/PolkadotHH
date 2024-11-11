@@ -4,7 +4,6 @@ export interface FileMetadata {
   size: number;
   uploadedBy: string;
   uploadedAt: Date;
-  encryptionKey: string;
   authorizedUsers: string[];
   cid: string;
 }
