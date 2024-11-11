@@ -112,7 +112,7 @@ const shareFileAccess = async (
     setIsLoading(true);
     try {
       // Construct download URL
-      const url = `https://cdn.testnet.cere.network/${bucketId}/${cid}?token=${token}`;
+      const url = `https://cdn.mainnet.cere.network/${bucketId}/${cid}?token=${token}`;
       
       // Download encrypted data
       const response = await fetch(url);

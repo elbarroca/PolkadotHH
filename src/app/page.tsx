@@ -58,15 +58,6 @@ export default function Home() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [isAddFolderModalOpen, setIsAddFolderModalOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const [dummyFiles, setDummyFiles] = useState<FileItem[]>(() => 
-    DUMMY_FILES.map(file => ({
-      ...file,
-      id: uuidv4(),
-      folderId: null as string | null,
-      name: file.title,
-      starred: false
-    }))
-  );
   const [currentView, setCurrentView] = useState<'myDrive' | 'shared'>('myDrive');
   const [refetchFolders, setRefetchFolders] = useState<(() => Promise<void>) | null>(null);
 
@@ -218,33 +209,9 @@ export default function Home() {
     );
   };
 
-  const handleFileDelete = (fileId: string) => {
-    setDummyFiles(prev => prev.filter(file => file.id !== fileId));
-  };
-
   useEffect(() => {
     console.log('Folders updated:', folders);
   }, [folders]);
-
-  const getCurrentFiles = () => {
-    if (!selectedFolder) {
-      return dummyFiles.filter(file => !file.folderId);
-    }
-    return dummyFiles.filter(file => file.folderId === selectedFolder);
-  };
-
-  // Add this function to handle moving files between folders
-  const handleMoveFile = (fileId: string, targetFolderId: string | null) => {
-    setDummyFiles(prev => prev.map(file => {
-      if (file.id === fileId) {
-        return {
-          ...file,
-          folderId: targetFolderId
-        };
-      }
-      return file;
-    }));
-  };
 
   return (
     <div className="flex h-screen flex-col bg-gray-900">
@@ -334,20 +301,7 @@ export default function Home() {
                   </Button>
                 </div>
                 <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 animate-fadeIn">
-                  {getCurrentFiles().map((file) => (
-                    <FileCard
-                      key={file.id}
-                      id={file.id}
-                      title={file.title}
-                      imageUrl={file.imageUrl}
-                      size={file.size}
-                      uploadedBy={file.uploadedBy}
-                      description={file.description}
-                      onDelete={(fileId: string) => {
-                        setDummyFiles(prev => prev.filter(f => f.id !== fileId));
-                      }}
-                    />
-                  ))}
+
                 </div>
               </>
             ) : (
