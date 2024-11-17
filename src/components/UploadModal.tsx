@@ -32,7 +32,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [description, setDescription] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('');
 
-  const { uploadFile } = useFileManager();
+  const { uploadFile, shareFile } = useFileManager();
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);

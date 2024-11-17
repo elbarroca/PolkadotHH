@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { DagNode, DagNodeUri, Link, UriSigner } from '@cere-ddc-sdk/ddc-client';
+import { AuthToken, AuthTokenOperation, DagNode, DagNodeUri, Link, UriSigner } from '@cere-ddc-sdk/ddc-client';
 import { useDdcClient } from './useDdcClient';
 import { useStorage } from './useStorage';
 import { FileMetadata } from 'types';
 import { v4 as uuidv4 } from 'uuid';
-import { useToast } from './use-toast';
+import { useToast } from './useToast';
+import { useWallet } from '@/contexts/WalletProvider';
 
 export const useFileManager = () => {
     const { client, error: clientError, isInitializing, walletAddress } = useDdcClient();
+    const { web3Signer } = useWallet();
     const [myFiles, setMyFiles] = useState<FileMetadata[]>([]);
-    const { toast } = useToast()
 
     const storage = useStorage({
       client: client!,
@@ -40,15 +41,6 @@ export const useFileManager = () => {
               description: '',
               folderId: null
           };
-
-          // Construct the URL for the uploaded file
-          const fileUrl = `https://cdn.mainnet.cere.network/${bucketId!}/${fileMetadata.cid}?token=YOUR_TOKEN_HERE`;
-
-          // Show toast notification with file information
-          toast({
-              title: "File uploaded",
-              description: `Check your file on: <a href="${fileUrl}" target="_blank">${fileUrl}</a>`,
-          });
 
           // Indexing the file in the developer console
           const filePathInDeveloperConsole = `uploads/${fileMetadata.name}/`; // Define the path in the developer console
@@ -83,32 +75,26 @@ export const useFileManager = () => {
       }
   };
 
-  const shareFile = async (
-    fileMetadata: FileMetadata,
-    recipientAddress: string,
-    recipientSeed: string
-  ) => {
+  const shareFile = async (fileMetadata: FileMetadata) => {
     if (!client) throw new Error('DDC client not initialized');
 
     try {
-      const recipientSigner = new UriSigner(recipientSeed);
-      const bucketId = localStorage.getItem('userBucketId');
-      if (!bucketId) throw new Error('User does not have bucket');
+        const bucketId = localStorage.getItem('userBucketId');
+        if (!bucketId) throw new Error('Bucket ID not found');
 
-      const accessToken = await storage.shareFileAccess(
-        bucketId,
-        fileMetadata.cid,
-        recipientAddress,
-        recipientSigner
-      );
+        const accessToken = new AuthToken({
+            bucketId: BigInt(bucketId),
+            pieceCid: fileMetadata.cid,
+            operations: [AuthTokenOperation.GET],
+        });
+        await accessToken.sign(web3Signer!);
 
-      return accessToken;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Sharing failed');
-      console.error('Sharing failed:', error);
-      throw error;
+        return `https://cdn.testnet.cere.network/${bucketId}/${fileMetadata.cid}?token=${accessToken.toString()}`;
+    } catch (error) {
+        console.error('Error sharing file:', error);
+        throw error;
     }
-  };
+};
 
   const downloadFile = async (
     fileMetadata: FileMetadata,

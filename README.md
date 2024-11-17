@@ -1,3 +1,12 @@
+To-do:
+
+- Correct implementation for folders, i would store also the folders created by users on the db, make sure developer console use same folder structure
+- Create file + add uri to db
+- Share files with other wallets + make sure the tokens can de/serialize correctly (I would use encryption, the user who received the shared files should sign a message and be able to access the file by deserializing it). So step 1, is the owner sharing the file, the other user got an access token which is needed from cere network sdk. How to make the access token available for the other user using cryptography? (the token should be signed also by the one that get access to the file. Create an access token that is signed by a Bob and is granted to Alice so that only Alice can use this token to access a content.
+The Bobs token can't be used directly because he has specified an Alice in a token 'subject' so this token should be wrapped into another token that is signed by Alice: https://github.com/Cerebellum-Network/cere-ddc-sdk-js/blob/main/examples/node/7-private-bucket-access-sharing/index.ts
+- List files (own + got shared), should be a get endpoint in the nextjs app, just query the db
+- PDF visualizer
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

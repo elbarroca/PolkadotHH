@@ -4,7 +4,7 @@ import { useWallet } from '@/contexts/WalletProvider';
 import { Web3Signer } from '@cere-ddc-sdk/blockchain';
 
 export const useDdcClient = () => {
-  const { web3Signer, activeAccount } = useWallet(); // Use web3Signer instead of signer
+  const { web3Signer, activeAccount } = useWallet();
   const [client, setClient] = useState<DdcClient | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);

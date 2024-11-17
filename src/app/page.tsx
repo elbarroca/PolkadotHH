@@ -17,49 +17,24 @@ import {
   FolderPlus
 } from 'lucide-react';
 import { Header } from '../components/Header';
-import { FileCard } from '../components/FileCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { v4 as uuidv4 } from 'uuid';
 import { SharedDashboard } from '../components/SharedDashboard';
 import { FileMetadata, Folder } from 'types';
 import { FileItem } from '@/types';
-
-const DUMMY_FILES = [
-  {
-    title: "Project Documentation",
-    imageUrl: "/images/project-doc.jpg",
-    size: "2.4 MB",
-    uploadedBy: "5CUiis...D8gr",
-    description: "Complete project documentation including architecture diagrams and technical specifications."
-  },
-  {
-    title: "Design Assets",
-    imageUrl: "/images/design-assets.jpg",
-    size: "5.1 MB",
-    uploadedBy: "5CUiis...D8gr",
-    description: "UI/UX design assets and brand guidelines for the platform."
-  },
-  {
-    title: "Technical Whitepaper",
-    imageUrl: "/images/whitepaper.jpg",
-    size: "1.8 MB",
-    uploadedBy: "5CUiis...D8gr",
-    description: "Detailed technical whitepaper explaining the system architecture and protocols."
-  }
-];
+import { useToast } from '@/hooks/useToast';
 
 export default function Home() {
   const { activeAccount, connectWallet } = useWallet();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [files, setFiles] = useState<FileItem[]>([]);
-  const [showStarred, setShowStarred] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [isAddFolderModalOpen, setIsAddFolderModalOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'myDrive' | 'shared'>('myDrive');
-  const [refetchFolders, setRefetchFolders] = useState<(() => Promise<void>) | null>(null);
+  const { toast } = useToast()
 
   const filteredFiles = useMemo(() => {
     return files.filter(file => 
@@ -104,16 +79,22 @@ export default function Home() {
   };
 
   const handleUploadComplete = async (metadata: FileMetadata) => {
-    console.log('File uploaded:', metadata);
     setIsUploadModalOpen(false);
-    
-    if (refetchFolders) {
-      try {
-        await refetchFolders();
-      } catch (error) {
-        console.error('Failed to refresh folders:', error);
-      }
-    }
+    const fileUrl = `https://cdn.mainnet.cere.network/${metadata.folderId}/${metadata.cid}`;
+
+    toast({
+      title: "File uploaded",
+      description: (
+        <a
+          href={fileUrl}
+          className="text-blue-500"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Check your file on:
+        </a>
+      ),
+  });
   };
 
   const handleConnect = async () => {

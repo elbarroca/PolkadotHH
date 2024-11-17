@@ -13,7 +13,7 @@ import {
     setLocalActiveAccount, 
     removeLocalActiveAccount, 
     removeLocalExtension 
-} from '../localStorage';
+} from '../lib/localStorage';
 import { Web3Signer } from '@cere-ddc-sdk/blockchain';
 import { encodeAddress, decodeAddress } from '@polkadot/util-crypto';
 
