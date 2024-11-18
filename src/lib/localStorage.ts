@@ -1,5 +1,5 @@
 'use client';
-
+// note: https://stackoverflow.com/questions/44133536/is-it-safe-to-store-a-jwt-in-localstorage-with-reactjs
 export const getLocalActiveAccount = (network: string): string | null => {
   return localStorage.getItem(`${network}_active_account`);
 };

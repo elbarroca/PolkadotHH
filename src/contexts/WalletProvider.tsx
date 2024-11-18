@@ -4,7 +4,6 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { web3Enable, web3Accounts } from '@polkadot/extension-dapp';
 import { InjectedExtension } from '@polkadot/extension-inject/types';
 import React, { createContext, useContext, useRef, useState, useCallback } from 'react';
-import { NETWORKS } from '../config/cereNetwork';
 import { AccountInfo } from '@polkadot/types/interfaces';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import { 
@@ -16,6 +15,7 @@ import {
 } from '../lib/localStorage';
 import { Web3Signer } from '@cere-ddc-sdk/blockchain';
 import { encodeAddress, decodeAddress } from '@polkadot/util-crypto';
+import { NETWORKS } from '@/lib/cereNetwork';
 
 export interface ImportedAccount {
   address: string;

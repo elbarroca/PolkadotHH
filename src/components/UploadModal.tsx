@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { UploadModalProps, FileMetadata, Folder } from '../../types';
-import { v4 as uuidv4 } from 'uuid';
+import { UploadModalProps, FileMetadata, FolderMetadata } from '../types';
 import { Upload } from 'lucide-react';
 import {
   Dialog,
@@ -12,86 +11,63 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useFileManager } from '@/hooks/useFileManager';
+import { useStorage } from '@/hooks/useStorage';
+import { toast } from '@/hooks/useToast';
 
 export const UploadModal: React.FC<UploadModalProps> = ({
   isOpen, 
   onClose, 
   onUploadComplete,
-  walletAddress,
   folders 
 }: UploadModalProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const encryptionKey = useRef<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingToServer, setUploadingToServer] = useState(false);
-  const uploadId = useRef<string>(uuidv4());
   const [fileName, setFileName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('');
+  const [recipientAddresses, setRecipientAddresses] = useState<string[]>([]);
 
-  const { uploadFile, shareFile } = useFileManager();
+  const { uploadFile } = useStorage();
+
+  const handleAddAddress = (address: string) => {
+    setRecipientAddresses([...recipientAddresses, address]);
+  };
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null);
     const selectedFile = event.target.files?.[0];
     
     if (!selectedFile) {
-      setError('No file selected');
+      console.log('No file selected');
       return;
     }
 
-    // Validate file size (e.g., max 50MB)
-    const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+    const maxSize = 100 * 1024 * 1024; // 100MB in bytes
     if (selectedFile.size > maxSize) {
-      setError('File size exceeds 50MB limit');
+      console.log('File size exceeds 50MB limit');
       return;
     }
 
     setFile(selectedFile);
   }, []);
 
-  const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = () => {
-        if (reader.result instanceof ArrayBuffer) {
-          resolve(reader.result);
-        } else {
-          reject(new Error('Failed to read file as ArrayBuffer'));
-        }
-      };
-      
-      reader.onerror = () => {
-        reject(new Error('Error reading file'));
-      };
-            
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
   const handleUpload = async () => {
     if (!file) {
-      setError('Please select a file first');
+      toast({
+        title: 'No file selected',
+        description: 'Please select a file to upload',
+      });
       return;
     }
 
     setIsLoading(true);
-    setError(null);
     
     try {
-      // Upload file using FileManager
-      const fileMetadata = await uploadFile(file);
-
-      // Update metadata with additional info
+      const fileMetadata = await uploadFile(file, recipientAddresses);
       const updatedMetadata: FileMetadata = {
         ...fileMetadata,
         name: fileName || file.name,
-        description: description,
-        folderId: selectedFolder || null
+        folder: selectedFolder
       };
       
       if (onUploadComplete) {
@@ -100,7 +76,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       
       onClose();
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to process file');
+      console.log(error instanceof Error ? error.message : 'Failed to process file');
     } finally {
       setIsLoading(false);
     }
@@ -150,8 +126,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 className="w-full bg-gray-800/50 border border-gray-700 text-gray-200 rounded-md px-3 py-2 focus:border-emerald-500 outline-none appearance-none"
               >
                 <option value="">Root Directory</option>
-                {folders?.map((folder: Folder) => (
-                  <option key={folder.id} value={folder.id}>
+                {folders?.map((folder: FolderMetadata) => (
+                  <option key={folder.name} value={folder.name}>
                     {folder.name}
                   </option>
                 ))}
@@ -194,22 +170,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   <div className="text-center">
                     <p className="text-base">Choose a file or drag it here</p>
                     <p className="text-sm text-gray-500 mt-1">
-                      Maximum file size: 50MB
+                      Maximum file size: 100MB
                     </p>
                   </div>
                 )}
               </div>
             </Button>
           </div>
-
-            <div className="space-y-2 bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-              <div className="flex justify-between text-sm text-gray-400">
-                <span className="flex items-center gap-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full" />
-                  Uploading...
-                </span>
-              </div>
-            </div>
         </div>
 
         <div className="flex justify-end space-x-4 mt-6">

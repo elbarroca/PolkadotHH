@@ -1,86 +1,71 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import React from 'react';
 import { UploadModal } from '../components/UploadModal';
 import { useWallet } from '../contexts/WalletProvider';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
 import { 
-  Folder as FolderIcon, 
   Users, 
   Wallet,
   Upload,
   Lock,
   Layout,
-  FolderPlus
 } from 'lucide-react';
 import { Header } from '../components/Header';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { v4 as uuidv4 } from 'uuid';
 import { SharedDashboard } from '../components/SharedDashboard';
-import { FileMetadata, Folder } from 'types';
-import { FileItem } from '@/types';
 import { useToast } from '@/hooks/useToast';
+import { useStorage } from '@/hooks/useStorage';
+import { FileMetadata, FolderMetadata } from '@/types';
+import { FolderModal } from '@/components/FolderModal';
 
 export default function Home() {
   const { activeAccount, connectWallet } = useWallet();
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [files, setFiles] = useState<FileItem[]>([]);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [isAddFolderModalOpen, setIsAddFolderModalOpen] = useState(false);
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'myDrive' | 'shared'>('myDrive');
+  const { deleteFolder, folders } = useStorage();
   const { toast } = useToast()
 
-  const filteredFiles = useMemo(() => {
-    return files.filter(file => 
-      file.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [files, searchQuery]);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [currentView, setCurrentView] = useState<'myDrive' | 'shared'>('myDrive');
 
-  const handleCreateFolder = (folderName: string) => {
-    const newFolder: Folder = {
-      id: uuidv4(),
-      name: folderName,
-      files: []
-    };
-    setFolders(prev => [...prev, newFolder]);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState<FolderMetadata | null>(null);
+
+  const handleCreateFolder = (parentFolderId?: string) => {
+    setSelectedFolder(parentFolderId ? folders.find(folder => folder.name === parentFolderId) || null : null);
+    setIsFolderModalOpen(true);
   };
+
+  const handleFolderCreated = (folderMetadata: FolderMetadata) => {
+    folders.push(folderMetadata);
+  };
+
+  const renderFolderTree = (folders: FolderMetadata[], parentFolderName?: string) => (
+    <ul>
+      {folders
+        .filter(folder => folder.name === parentFolderName)
+        .map(folder => (
+          <li key={folder.name}>
+            {folder.name}
+            <button /*onClick={() => handleDeleteFolder(folder.id)}*/>Delete</button>
+            <button onClick={() => handleCreateFolder()}>Create Subfolder</button>
+            {renderFolderTree(folders, folder.name)}
+          </li>
+        ))}
+    </ul>
+  );
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
 
-  const handleDeleteFile = (id: string) => {
-    setFiles(files.filter(file => file.id !== id));
-  };
-
-  const handleToggleStar = (id: string) => {
-    setFiles(files.map(file => {
-      if (file.id === id) {
-        return {
-          ...file,
-          starred: !(file.starred ?? false)
-        };
-      }
-      return file;
-    }));
-  };
-
-  const updatedClasses = {
-    folderIcon: "h-12 w-12 text-emerald-500 transform transition-transform hover:scale-110 duration-200",
-    fileIcon: "h-12 w-12 text-emerald-400 transform transition-transform hover:scale-110 duration-200",
-    fileCard: "flex flex-col items-center space-y-2 rounded-lg border p-4 hover:bg-emerald-50 transition-all duration-200 hover:shadow-lg hover:border-emerald-200",
-    uploadButton: "bg-emerald-500 hover:bg-emerald-600 text-white transition-all duration-200 hover:shadow-lg",
-  };
-
   const handleUploadComplete = async (metadata: FileMetadata) => {
     setIsUploadModalOpen(false);
-    const fileUrl = `https://cdn.mainnet.cere.network/${metadata.folderId}/${metadata.cid}`;
+    const fileUrl = metadata.folder ? 
+      `https://cdn.mainnet.cere.network/${metadata.folder}/${metadata.cid}` :
+      `https://cdn.mainnet.cere.network/${metadata.cid}`;
 
     toast({
       title: "File uploaded",
@@ -108,88 +93,6 @@ export default function Home() {
     }
   };
 
-  const AddFolderModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-    const [folderName, setFolderName] = useState('');
-    const [error, setError] = useState('');
-
-    const handleCreateFolder = () => {
-      if (!folderName.trim()) {
-        setError('Folder name is required');
-        return;
-      }
-
-      // Check if folder name already exists
-      if (folders.some(f => f.name.toLowerCase() === folderName.trim().toLowerCase())) {
-        setError('A folder with this name already exists');
-        return;
-      }
-
-      const newFolder: Folder = { 
-        id: uuidv4(), 
-        name: folderName.trim(),
-        files: [] 
-      };
-      
-      setFolders(prev => [...prev, newFolder]);
-      setFolderName('');
-      setError('');
-      onClose();
-    };
-
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md bg-gray-900 border border-gray-800">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gray-100 flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/10 rounded-lg">
-                <FolderPlus className="h-6 w-6 text-emerald-400" />
-              </div>
-              Create New Folder
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Folder Name</label>
-              <Input
-                value={folderName}
-                onChange={(e) => {
-                  setFolderName(e.target.value);
-                  setError('');
-                }}
-                placeholder="Enter folder name"
-                className="bg-gray-800 border-gray-700 text-gray-200 focus:border-emerald-500"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleCreateFolder();
-                  }
-                }}
-              />
-              {error && (
-                <p className="text-sm text-red-400 mt-1">{error}</p>
-              )}
-            </div>
-            <div className="flex justify-end space-x-4">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreateFolder}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white"
-                disabled={!folderName.trim()}
-              >
-                Create Folder
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
   useEffect(() => {
     console.log('Folders updated:', folders);
   }, [folders]);
@@ -207,49 +110,11 @@ export default function Home() {
                     <h2 className="text-xl font-semibold tracking-tight text-gray-200">
                     Menu
                   </h2>
-                    <Button 
-                      variant="ghost" 
-                      className="text-gray-400 hover:text-emerald-400"
-                      onClick={() => setIsAddFolderModalOpen(true)}
-                    >
-                      <FolderPlus className="h-5 w-5" />
-                      <span className="ml-2">New Folder</span>
-                    </Button>
-                  </div>
-                  <div className="space-y-4">
-                    <Button 
-                      variant="secondary" 
-                      className={`w-full justify-start ${currentView === 'myDrive' ? 'bg-gray-800 text-emerald-400' : 'bg-gray-900 text-gray-200'} hover:bg-gray-700 py-8 text-xl`}
-                      onClick={() => {
-                        setCurrentView('myDrive');
-                        setSelectedFolder(null);
-                      }}
-                    >
-                      <FolderIcon className="mr-4 h-8 w-8 text-emerald-400" />
-                      My Drive
-                    </Button>
-
-                    {/* Folders List */}
-                    <div className="space-y-2 pl-4">
-                      {folders.map((folder) => (
-                        <Button
-                          key={folder.id}
-                          variant="ghost"
-                          className={`w-full justify-start py-2 ${
-                            selectedFolder === folder.id 
-                              ? 'bg-gray-800 text-emerald-400' 
-                              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-                          }`}
-                          onClick={() => setSelectedFolder(folder.id)}
-                        >
-                          <FolderIcon className="mr-2 h-5 w-5" />
-                          <span className="truncate">{folder.name}</span>
-                          <span className="ml-auto text-xs text-gray-500">
-                            {folder.files.length} files
-                          </span>
-                        </Button>
-                      ))}
-                    </div>
+                  <div>
+      <h2>Folders</h2>
+      <button onClick={() => handleCreateFolder()}>Create Folder</button>
+      {renderFolderTree(folders)}
+    </div>
 
                     <Button 
                       variant="ghost" 
@@ -270,7 +135,7 @@ export default function Home() {
                 <div className="mb-8 flex items-center justify-between">
                   <h2 className="text-3xl font-bold text-gray-100">
                     {selectedFolder 
-                      ? folders.find(f => f.id === selectedFolder)?.name 
+                      ? folders.find(f => f.name === selectedFolder.name)?.name 
                       : "My Drive"}
                   </h2>
                   <Button 
@@ -395,9 +260,10 @@ export default function Home() {
         folders={folders}
         onUploadComplete={handleUploadComplete}
       />
-      <AddFolderModal 
-        isOpen={isAddFolderModalOpen} 
-        onClose={() => setIsAddFolderModalOpen(false)} 
+      <FolderModal
+        isOpen={isFolderModalOpen}
+        onClose={() => setIsFolderModalOpen(false)}
+        onFolderCreated={handleFolderCreated}
       />
     </div>
   );
