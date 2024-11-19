@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect } from 'react';
 import { useDdcClient } from './useDdcClient';
 import { useWallet } from '@/contexts/WalletProvider';
@@ -41,7 +42,7 @@ export const useStorage = () => {
   const deleteFolder = async (folderId: string) => {
     try {
       await ky.delete(`/api/folders?folderId=${folderId}`);
-      fetchFolders();
+      await fetchFolders();
     } catch (error) {
       console.error("Error deleting folder:", error);
     }
@@ -50,7 +51,7 @@ export const useStorage = () => {
   const createFile = async (fileMetadata: FileMetadata) => {
     try {
       await ky.post("/api/files", { json: fileMetadata });
-      fetchFolders();
+      await fetchFolders();
     } catch (error) {
       console.error("Error creating file:", error);
     }
@@ -69,15 +70,30 @@ export const useStorage = () => {
     if (!walletAddress) throw new Error('Wallet address not available');
 
     try {
-      const bucketId = localStorage.getItem('userBucketId');
+      let bucketId = localStorage.getItem('userBucketId');
       if (!bucketId) {
-        throw new Error('User bucket not found');
+        localStorage.setItem('userBucketId', '1099');
+        bucketId = localStorage.getItem('userBucketId');
+        //bucketId = await createPrivateBucket();
+        /// CHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
       }
 
-      return await upload(file, BigInt(bucketId), recipientAddresses);
+      const metadata = await upload(file, BigInt(bucketId!), recipientAddresses);
+      await createFile(metadata);
+
+      return metadata;
     } catch (error) {
       console.error('Error uploading file:', error);
       throw error;
+    }
+  };
+
+  const deleteFile = async (fileId: string) => {
+    try {
+      await ky.delete(`/api/files?fileId=${fileId}`);
+      fetchFolders();
+    } catch (error) {
+      console.error("Error deleting file:", error);
     }
   };
 
@@ -86,7 +102,7 @@ export const useStorage = () => {
     if (!web3Signer) throw new Error('Web3 signer not available');
 
     try {
-      const bucketId = localStorage.getItem('userBucketId');
+      const bucketId = localStorage.getItem('userBucketId') || 1099;
       if (!bucketId) throw new Error('User bucket not found');
 
       return await share(
@@ -136,5 +152,6 @@ export const useStorage = () => {
     createFolder,
     deleteFolder,
     createFile,
+    deleteFile,
   };
 };

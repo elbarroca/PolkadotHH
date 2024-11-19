@@ -37,14 +37,6 @@ export interface TokenPayload {
   permissions: string[];
 }
 
-export interface UploadModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onUploadComplete?: (fileMetadata: FileMetadata) => void;
-  walletAddress: string;
-  folders: FolderMetadata[];
-}
-
 export interface FileUploadState {
   file: File | null;
   progress: {

@@ -6,7 +6,10 @@ export async function POST(request: Request) {
   const folderMetadata: FolderMetadata = await request.json();
 
   try {
-    await db.collection("folders").doc(folderMetadata.name).set(folderMetadata);
+    const userDocRef = db.collection("users").doc(folderMetadata.createdBy);
+    const foldersCollectionRef = userDocRef.collection("folders");
+    await foldersCollectionRef.doc(folderMetadata.name).set(folderMetadata);
+
     return NextResponse.json({ message: "Folder created successfully" });
   } catch (error) {
     console.error("Error creating folder:", error);
@@ -23,7 +26,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const snapshot = await db.collection("folders").where("createdBy", "==", walletAddress).get();
+    const userDocRef = db.collection("users").doc(walletAddress);
+    const snapshot = await userDocRef.collection("folders").get();
     const folders = snapshot.docs.map((doc) => doc.data() as FolderMetadata);
     return NextResponse.json(folders);
   } catch (error) {
@@ -34,14 +38,15 @@ export async function GET(request: Request) {
 
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
+  const walletAddress = searchParams.get("walletAddress");
   const folderId = searchParams.get("folderId");
 
-  if (!folderId) {
-    return NextResponse.json({ error: "Folder ID is required" }, { status: 400 });
+  if (!walletAddress || !folderId) {
+    return NextResponse.json({ error: "Wallet address and Folder ID are required" }, { status: 400 });
   }
 
   try {
-    await deleteFolderRecursively(folderId);
+    await deleteFolderRecursively(walletAddress, folderId);
     return NextResponse.json({ message: "Folder deleted successfully" });
   } catch (error) {
     console.error("Error deleting folder:", error);
@@ -49,12 +54,10 @@ export async function DELETE(request: Request) {
   }
 }
 
-async function deleteFolderRecursively(folderId: string) {
-  // Delete the folder
-  await db.collection("folders").doc(folderId).delete();
-
-  // Delete all child folders recursively
-  const childFolders = await db.collection("folders").where("parentFolderId", "==", folderId).get();
-  const deleteFolderPromises = childFolders.docs.map((doc) => deleteFolderRecursively(doc.id));
+async function deleteFolderRecursively(walletAddress: string, folderId: string) {
+  const userDocRef = db.collection("users").doc(walletAddress);
+  await userDocRef.collection("folders").doc(folderId).delete();
+  const childFolders = await userDocRef.collection("folders").where("parentFolderId", "==", folderId).get();
+  const deleteFolderPromises = childFolders.docs.map((doc) => deleteFolderRecursively(walletAddress, doc.id));
   await Promise.all(deleteFolderPromises);
 }

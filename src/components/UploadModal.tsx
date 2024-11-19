@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { UploadModalProps, FileMetadata, FolderMetadata } from '../types';
+import { useState, useRef, useCallback } from 'react';
+import { FileMetadata, FolderMetadata } from '../types';
 import { Upload } from 'lucide-react';
 import {
   Dialog,
@@ -14,11 +14,18 @@ import { Input } from '@/components/ui/input';
 import { useStorage } from '@/hooks/useStorage';
 import { toast } from '@/hooks/useToast';
 
+export interface UploadModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onUploadComplete?: (fileMetadata: FileMetadata) => void;
+  folders: FolderMetadata[];
+}
+
 export const UploadModal: React.FC<UploadModalProps> = ({
   isOpen, 
   onClose, 
   onUploadComplete,
-  folders 
+  folders,
 }: UploadModalProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,13 +33,19 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [fileName, setFileName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('');
-  const [recipientAddresses, setRecipientAddresses] = useState<string[]>([]);
-
   const { uploadFile } = useStorage();
-
-  const handleAddAddress = (address: string) => {
-    setRecipientAddresses([...recipientAddresses, address]);
-  };
+  const [addresses, setAddresses] = useState<string[]>([]);
+  const [currentAddress, setCurrentAddress] = useState("")
+  
+  const addAddress = () => {
+    if (currentAddress.trim() !== "") {
+      setAddresses([...addresses, currentAddress.trim()])
+      setCurrentAddress("")
+    }
+  }
+  const removeAddress = (index: number) => {
+    setAddresses(addresses.filter((_, i) => i !== index))
+  }
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -63,7 +76,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setIsLoading(true);
     
     try {
-      const fileMetadata = await uploadFile(file, recipientAddresses);
+      const fileMetadata = await uploadFile(file, addresses);
       const updatedMetadata: FileMetadata = {
         ...fileMetadata,
         name: fileName || file.name,
@@ -75,6 +88,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       }
       
       onClose();
+      setAddresses([])
     } catch (error) {
       console.log(error instanceof Error ? error.message : 'Failed to process file');
     } finally {
@@ -95,9 +109,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             Upload File
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-6 py-4">
-          <div className="space-y-2">
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
             <label className="text-sm font-medium text-gray-300">File Name</label>
             <Input
               value={fileName}
@@ -140,6 +153,40 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             </div>
           </div>
 
+          <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <label htmlFor="currentAddress" className="text-sm font-medium">
+              Enter Address
+            </label>
+            <Input
+              id="currentAddress"
+              value={currentAddress}
+              onChange={(e) => setCurrentAddress(e.target.value)}
+              placeholder="Enter an address"
+            />
+            <Button onClick={addAddress} size="sm">
+              Add Address
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {addresses.map((address, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-2 rounded-md bg-gray-100 px-2 py-1 text-sm"
+              >
+                <span>{`${address.slice(0, 5)}...`}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeAddress(index)}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          </div>
           <div className="border-2 border-dashed border-gray-700 rounded-xl p-8 hover:border-emerald-500/50 transition-all duration-300 bg-gray-800/50 group">
             <input
               type="file"

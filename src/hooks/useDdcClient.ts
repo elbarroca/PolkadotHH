@@ -1,7 +1,8 @@
+'use client';
+
 import { DdcClient, MAINNET } from '@cere-ddc-sdk/ddc-client';
 import { useState, useEffect } from 'react';
 import { useWallet } from '@/contexts/WalletProvider';
-import { Web3Signer } from '@cere-ddc-sdk/blockchain';
 
 export const useDdcClient = () => {
   const { web3Signer, activeAccount } = useWallet();

@@ -34,7 +34,7 @@ export interface WalletContextInterface {
   activeAccount: string | null;
   activeNetwork: string | null;
   accounts: ImportedAccount[];
-  web3Signer: Web3Signer | null; // Change from signer to web3Signer
+  web3Signer: Web3Signer | null;
 }
 
 const defaultContext: WalletContextInterface = {
@@ -132,23 +132,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       throw error;
     }
   }, [api, activeAccount]);
-  
-const convertAddress = (address: string, expectedFormat: number) => {
-  try {
-    const decoded = decodeAddress(address, true, 54);
-    const ss58Format = decoded[0]; // Get the SS58 format from the decoded address
-
-    if (ss58Format !== expectedFormat) {
-      // Convert to the expected format
-      return encodeAddress(decoded, expectedFormat);
-    }
-
-    return address; // Return the original address if it matches
-  } catch (error) {
-    console.error('Invalid address:', error);
-    throw new Error('Invalid address format');
-  }
-};
 
   const disconnectWallet = useCallback(async () => {
     if (api) {
@@ -165,7 +148,7 @@ const convertAddress = (address: string, expectedFormat: number) => {
     setActiveAccount(null);
     setAccounts([]);
     setExtensions([]);
-    setWeb3Signer(null); // Reset the Web3Signer on disconnect
+    setWeb3Signer(null);
   }, [api, activeNetwork, activeAccount, extensions]);
 
   const switchNetwork = useCallback(async (networkKey: string) => {
@@ -193,7 +176,7 @@ const convertAddress = (address: string, expectedFormat: number) => {
       throw new Error('No active account or Web3Signer available');
     }
 
-    const signature = await web3Signer.sign(message); // Use the Web3Signer instance
+    const signature = await web3Signer.sign(message);
 
     return signature.toString();
   }, [activeAccount, web3Signer]);

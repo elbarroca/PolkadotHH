@@ -1,3 +1,4 @@
+'use client';
 import { useState } from 'react';
 import { File as DdcFile, AuthTokenOperation, BucketId, AuthToken } from '@cere-ddc-sdk/ddc-client';
 import { FileMetadata } from '@/types';

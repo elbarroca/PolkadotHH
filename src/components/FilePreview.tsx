@@ -10,7 +10,7 @@ interface FilePreviewProps {
   file: {
     title: string;
     imageUrl: string;
-    size: string;
+    size: number;
     uploadedBy?: string;
     description?: string;
   };
