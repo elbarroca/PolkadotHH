@@ -100,7 +100,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md animate-slideIn bg-gray-900/95 border border-gray-800 shadow-xl shadow-emerald-500/10">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto animate-slideIn bg-gray-900/95 border border-gray-800 shadow-xl shadow-emerald-500/10">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-gray-100 flex items-center gap-3">
             <div className="p-2 bg-emerald-500/10 rounded-lg">

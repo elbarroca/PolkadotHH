@@ -37,7 +37,7 @@ export const GeneralDashboard: React.FC<GeneralDashboardProps> = ({ folders }) =
           Check your file
           <a
             href={fileUrl}
-            className="text-blue-500"
+            className="text-green-700"
             target="_blank"
             rel="noopener noreferrer"
           >

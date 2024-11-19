@@ -87,7 +87,7 @@ export const MyDrive: React.FC<MyDriveProps> = ({
           </Button>
           <Button
             onClick={onCreateFolderClick}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
+            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
           >
             <FolderPlus className="mr-2 h-5 w-5" />
             Create Folder
