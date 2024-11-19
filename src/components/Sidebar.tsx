@@ -1,32 +1,41 @@
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Users } from 'lucide-react';
+import { Users, Folder } from 'lucide-react';
 import { FolderMetadata } from '@/types';
 
 interface SidebarProps {
   currentView: 'myDrive' | 'shared';
   onViewChange: (view: 'myDrive' | 'shared') => void;
+  folders: FolderMetadata[];
+  currentFolder?: FolderMetadata | null;
+  onFolderSelect: (folder: FolderMetadata) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   currentView, 
-  onViewChange, 
+  onViewChange,
+  folders = [],
+  currentFolder,
+  onFolderSelect,
 }) => {
-  const renderFolderTree = (folders: FolderMetadata[], parentFolderName?: string) => (
+  const renderFolderTree = (folderList: FolderMetadata[], parentFolderName?: string) => (
     <ul className="ml-4">
-      {folders
+      {folderList
         .filter(folder => folder.parentFolder === parentFolderName)
         .map(folder => (
           <li key={folder.name} className="mb-2">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400 hover:text-gray-200 cursor-pointer">
-                {folder.name}
-              </span>
-              <div>
-              </div>
-            </div>
-            {renderFolderTree(folders, folder.name)}
+            <Button
+              variant="ghost"
+              className={`w-full justify-start text-gray-400 hover:text-gray-200 hover:bg-gray-800 py-2 px-4 rounded-md ${
+                currentFolder?.name === folder.name ? 'bg-gray-800 text-gray-200' : ''
+              }`}
+              onClick={() => onFolderSelect(folder)}
+            >
+              <Folder className="mr-2 h-4 w-4" />
+              <span className="truncate">{folder.name}</span>
+            </Button>
+            {renderFolderTree(folderList, folder.name)}
           </li>
         ))}
     </ul>
@@ -57,6 +66,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 Shared with me
               </Button>
             </div>
+            
+            {/* Folders Section - Only show if folders exist */}
+            {folders && folders.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-medium text-gray-400 mb-2">
+                  Folders
+                </h3>
+                {renderFolderTree(folders)}
+              </div>
+            )}
           </div>
         </div>
       </ScrollArea>

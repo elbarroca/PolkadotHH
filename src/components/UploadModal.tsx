@@ -172,7 +172,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             {addresses.map((address, index) => (
               <div
                 key={index}
-                className="flex items-center gap-2 rounded-md bg-gray-100 px-2 py-1 text-sm"
+                className="flex items-center gap-2 rounded-md bg-gray-800/50 border border-gray-700 px-3 py-2 text-sm text-gray-200 hover:border-emerald-500/50 transition-all duration-200"
               >
                 <span>{`${address.slice(0, 5)}...`}</span>
                 <Button

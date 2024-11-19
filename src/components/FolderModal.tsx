@@ -86,12 +86,13 @@ export const FolderModal: React.FC<FolderModalProps> = ({
           <Button
             onClick={() => handleCreateFolder({ name: folderName, createdBy: activeAccount!, createdAt: new Date(), childFolders: [], files: [] })}
             disabled={!folderName || isLoading}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white transform hover:scale-105 transition-all duration-200"
+            className="relative bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-emerald-500/25 transform hover:translate-y-[-2px] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Create new folder"
           >
             {isLoading ? (
-              <span className="flex items-center">
+              <span className="flex items-center justify-center gap-2">
                 <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4"
+                  className="animate-spin h-5 w-5"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -110,10 +111,25 @@ export const FolderModal: React.FC<FolderModalProps> = ({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                Creating...
+                <span className="font-medium">Creating folder...</span>
               </span>
             ) : (
-              'Create Folder'
+              <span className="flex items-center justify-center gap-2">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 2H2v20h20V8L14 2h-2z"/>
+                  <path d="M14 2v6h6"/>
+                </svg>
+                Create Folder
+              </span>
             )}
           </Button>
         </div>

@@ -132,11 +132,25 @@ export const useStorage = () => {
     }
   };
 
-  const createFolder = async (folderMetadata: FolderMetadata) => {
+  const getFolders = async (): Promise<FolderMetadata[]> => {
     try {
-      return await ky.post("/api/folders", { json: folderMetadata });
+      // Get folders from localStorage for now
+      const storedFolders = localStorage.getItem('folders');
+      return storedFolders ? JSON.parse(storedFolders) : [];
     } catch (error) {
-      console.error("Error creating folder:", error);
+      console.error('Error getting folders:', error);
+      return [];
+    }
+  };
+
+  const createFolder = async (folderMetadata: FolderMetadata): Promise<void> => {
+    try {
+      const existingFolders = await getFolders();
+      const updatedFolders = [...existingFolders, folderMetadata];
+      localStorage.setItem('folders', JSON.stringify(updatedFolders));
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      throw error;
     }
   };
 
@@ -153,5 +167,6 @@ export const useStorage = () => {
     deleteFolder,
     createFile,
     deleteFile,
+    getFolders,
   };
 };

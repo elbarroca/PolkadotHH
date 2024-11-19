@@ -35,6 +35,8 @@ export interface WalletContextInterface {
   activeNetwork: string | null;
   accounts: ImportedAccount[];
   web3Signer: Web3Signer | null;
+  getAvailableAccounts: () => Promise<ImportedAccount[]>;
+  connectWithAccount: (account: ImportedAccount) => Promise<{ address: string; network: string }>;
 }
 
 const defaultContext: WalletContextInterface = {
@@ -48,6 +50,8 @@ const defaultContext: WalletContextInterface = {
   activeNetwork: null,
   accounts: [],
   web3Signer: null,
+  getAvailableAccounts: async () => [],
+  connectWithAccount: async () => ({ address: '', network: '' }),
 };
 
 const WalletContext = createContext<WalletContextInterface>(defaultContext);
@@ -181,6 +185,70 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return signature.toString();
   }, [activeAccount, web3Signer]);
 
+  const getAvailableAccounts = useCallback(async (): Promise<ImportedAccount[]> => {
+    try {
+      // Enable web3 first
+      const injectedExtensions = await web3Enable('PolkaDrive');
+      if (!injectedExtensions.length) {
+        throw new Error('No extension found');
+      }
+      
+      // Store extensions
+      injectedExtensions.forEach(ext => addLocalExtension(ext.name));
+      setExtensions(injectedExtensions);
+  
+      // Get all accounts
+      const allAccounts = await web3Accounts();
+      
+      // Format accounts
+      return allAccounts.map(account => ({
+        address: account.address,
+        name: account.meta.name || undefined,
+        source: account.meta.source || 'unknown',
+        signer: account.meta.source
+      }));
+    } catch (error) {
+      console.error('Failed to get accounts:', error);
+      throw error;
+    }
+  }, []);
+
+  const connectWithAccount = useCallback(async (selectedAccount: ImportedAccount) => {
+    try {
+      // Set the selected account
+      setAccounts([selectedAccount]);
+      accountsRef.current = [selectedAccount];
+  
+      const network = 'cereMainnet';
+      
+      // Update active account
+      setActiveAccount(selectedAccount.address);
+      activeAccountRef.current = selectedAccount.address;
+      setLocalActiveAccount(network, selectedAccount.address);
+      
+      // Initialize Web3Signer
+      const activeExtension = extensions.find(ext => ext.signer && ext.signer.signRaw);
+      if (activeExtension) {
+        const signerInstance = new Web3Signer();
+        await signerInstance.connect();
+        setWeb3Signer(signerInstance);
+      }
+  
+      // Initialize API if not already done
+      if (!api) {
+        await initializeApi('cereMainnet');
+      }
+  
+      return {
+        address: selectedAccount.address,
+        network: network
+      };
+    } catch (error) {
+      console.error('Failed to connect with account:', error);
+      throw error;
+    }
+  }, [api, extensions]);
+
   return (
     <WalletContext.Provider
       value={{
@@ -193,7 +261,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         activeAccount,
         activeNetwork,
         accounts,
-        web3Signer, // Provide the Web3Signer instance
+        web3Signer,
+        getAvailableAccounts,
+        connectWithAccount,
       }}
     >
       {children}
