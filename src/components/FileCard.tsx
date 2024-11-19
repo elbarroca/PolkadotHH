@@ -1,147 +1,158 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { FileText, Download, ExternalLink, Trash, Share2 } from 'lucide-react';
+import { FileText, Download, Trash, Share2, Eye } from 'lucide-react';
 import { FilePreview } from './FilePreview';
 import { ShareModal } from './ShareModal';
 import { useStorage } from '@/hooks/useStorage';
+import { FileMetadata } from '@/types';
+import { useToast } from '@/hooks/useToast';
 
 interface FileCardProps {
-  id: string;
-  title: string;
-  size: number;
+  file: FileMetadata;
   onDelete: () => void;
 }
 
-const DEFAULT_IMAGE = "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse2.mm.bing.net%2Fth%3Fid%3DOIP.MNqiZl7u5qQXf8ZHngXwdgHaE8%26pid%3DApi&f=1&ipt=51653442534b74a6b21852af102f8cb0723453af3425edfb09fc6fc0aa7caa63&ipo=images";
-
-export const FileCard: React.FC<FileCardProps> = ({
-  id,
-  title,
-  size,
-  onDelete
-}) => {
+export const FileCard: React.FC<FileCardProps> = ({ file, onDelete }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [fileContent, setFileContent] = useState<string | null>(null);
-  const { downloadFile } = useStorage();
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { getDownloadURL, downloadFile } = useStorage();
+  const { toast } = useToast();
 
-  const handlePreview = async () => {
+  useEffect(() => {
+    const loadPreviewUrl = async () => {
+      if (file.mimeType?.startsWith('image/')) {
+        try {
+          const url = await getDownloadURL(file);
+          setPreviewUrl(url);
+        } catch (error) {
+          console.error('Error loading preview URL:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load preview',
+            variant: 'destructive',
+          });
+        }
+      }
+    };
+
+    loadPreviewUrl();
+  }, [file, getDownloadURL, toast]);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsLoading(true);
+    
     try {
-      const content = await downloadFile(id);
-      setFileContent(content);
-      setIsPreviewOpen(true);
+      await downloadFile(file);
+      toast({
+        title: 'Success',
+        description: 'File downloaded successfully',
+      });
     } catch (error) {
       console.error('Error downloading file:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to download file',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleShare = () => {
-    // Implement share functionality
-    console.log('Sharing file:', title);
+  const handlePreview = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowPreview(true);
   };
 
   return (
     <>
       <div
-        className="group relative bg-gray-800/50 rounded-xl overflow-hidden border border-gray-700/50 transition-all duration-300 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/10 cursor-pointer backdrop-blur-sm transform hover:-translate-y-1"
+        className="relative p-4 bg-gray-800 rounded-lg shadow-md transition-all duration-200 hover:bg-gray-700 group"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onClick={handlePreview}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10" />
-
-        <div className="relative aspect-video w-full overflow-hidden">
-          <Image
-            src={DEFAULT_IMAGE}
-            alt={title}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-110"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            priority
-          />
+        {/* File Card Content */}
+        <div className="flex items-center space-x-4">
+          <div className="p-3 bg-emerald-500 rounded-lg">
+            {file.mimeType?.startsWith('image/') ? (
+              <Image className="h-6 w-6 text-white" src={''} alt={''} />
+            ) : (
+              <FileText className="h-6 w-6 text-white" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-gray-100 truncate">
+              {file.name}
+            </h3>
+            <p className="text-sm text-gray-400">
+              {formatFileSize(file.size)}
+            </p>
+          </div>
           
-          <div className={`absolute inset-0 flex items-center justify-center gap-6 bg-gray-900/70 backdrop-blur-sm transition-all duration-300 z-20 
-            ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-          >
-            <button 
-              className="p-4 bg-emerald-500/90 rounded-full hover:bg-emerald-500 transform hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-emerald-500/50"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Handle download
-                console.log('Downloading:', title);
-              }}
-            >
-              <Download className="h-6 w-6 text-white" />
-            </button>
-            <button 
-              className="p-4 bg-emerald-500/90 rounded-full hover:bg-emerald-500 transform hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-emerald-500/50"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsShareModalOpen(true);
-              }}
-            >
-              <Share2 className="h-6 w-6 text-white" />
-            </button>
-            {onDelete && (
-              <button 
-                className="p-4 bg-red-500/90 rounded-full hover:bg-red-500 transform hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-red-500/50"
+          {/* Action Buttons */}
+          {isHovered && (
+            <div className="absolute top-2 right-2 flex space-x-2">
+              <button
+                onClick={handleDownload}
+                disabled={isLoading}
+                className="p-1 bg-emerald-500 rounded-md text-white hover:bg-emerald-600 transition-colors"
+              >
+                <Download className="h-4 w-4" />
+              </button>
+              {file.mimeType?.startsWith('image/') && (
+                <button
+                  onClick={handlePreview}
+                  className="p-1 bg-blue-500 rounded-md text-white hover:bg-blue-600 transition-colors"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+              )}
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete();
                 }}
+                className="p-1 bg-red-500 rounded-md text-white hover:bg-red-600 transition-colors"
               >
-                <Trash className="h-6 w-6 text-white" />
+                <Trash className="h-4 w-4" />
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="relative p-5 space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-emerald-500/10 rounded-lg group-hover:bg-emerald-500/20 transition-colors">
-              <FileText className="h-5 w-5 text-emerald-400 group-hover:text-emerald-300" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-gray-200 truncate group-hover:text-emerald-400 transition-colors">
-                {title}
-              </h3>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between text-sm">
-            {size && (
-              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-medium">
-                {size}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Progress Bar */}
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-700/50">
-          <div className="h-full bg-emerald-500 transition-all duration-500 w-full transform origin-left scale-x-0 group-hover:scale-x-100" />
+          )}
         </div>
       </div>
 
+      {/* Modals */}
       <FilePreview
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
         file={{
-          title,
-          content: fileContent,
+          title: file.name,
+          imageUrl: previewUrl,
+          size: file.size,
+          uploadedBy: file.uploadedBy,
+          mimeType: file.mimeType,
         }}
       />
 
       <ShareModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
-        fileTitle={title}
-        onShare={handleShare}
+        fileMetadata={file}
       />
     </>
   );
+};
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };

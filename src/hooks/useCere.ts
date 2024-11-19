@@ -1,9 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { File as DdcFile, AuthTokenOperation, BucketId, AuthToken } from '@cere-ddc-sdk/ddc-client';
+import { File as DdcFile, AuthTokenOperation, BucketId, AuthToken, DagNode, DagNodeUri, Link } from '@cere-ddc-sdk/ddc-client';
 import { FileMetadata } from '@/types';
-import { useDdcClient } from './useDdcClient';
-import { Web3Signer } from '@cere-ddc-sdk/blockchain';
 import { useWallet } from '@/contexts/WalletProvider';
 
 const CERE = BigInt('10000000000');
@@ -11,8 +9,7 @@ const clusterId = '0059f5ada35eee46802d80750d5ca4a490640511';
 
 export const useCere = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { client, walletAddress } = useDdcClient();
-  const { web3Signer } = useWallet();
+  const { web3Signer, client, activeAccount } = useWallet();
 
   const createPrivateBucket = async () => {
     if (!client) throw new Error('Client not available');
@@ -38,7 +35,7 @@ export const useCere = () => {
 
   const upload = async (file: File, bucketId: BucketId, authorizedUsers: string[]): Promise<FileMetadata> => {
     if (!client) throw new Error('Client not available');
-    if (!walletAddress) throw new Error('Wallet address not available');
+    if (!activeAccount) throw new Error('Wallet address not available');
     setIsLoading(true);
 
     try {
@@ -52,21 +49,56 @@ export const useCere = () => {
         await share(bucketId, uploadedFileUri.cid, authorizedUsers);
       }
   
-      return {
+      const fileMetadata = {
         cid: uploadedFileUri.cid,
-        buckedId: bucketId.toString(),
+        bucketId: bucketId.toString(),
         name: file.name,
         mimeType: file.type,
         size: file.size,
-        uploadedBy: walletAddress,
+        uploadedBy: activeAccount,
         uploadedAt: new Date(),
         authorizedUsers,
-      };
+      }
+
+      indexFile(fileMetadata, bucketId.toString(), file.size);
+
+      return fileMetadata;
     } catch (error) {
       console.error('Error uploading file:', error);
       throw error;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const indexFile = async (fileMetadata: FileMetadata, bucketId: string, fileSize: number) => {
+    if (!client) throw new Error('Client not available');
+
+    try {
+      // Indexing the file in the developer console
+      const filePathInDeveloperConsole = `uploads/${fileMetadata.name}/`; // Define the path in the developer console
+      const rootDagNode = await client.read(new DagNodeUri(BigInt(bucketId), 'fs'), { cacheControl: 'no-cache' }).catch((res) => {
+        if (res.message == 'Cannot resolve CNS name: "fs"') {
+          return new DagNode(null);
+        } else {
+          throw new Error("Failed to fetch 'fs' DAG node");
+        }
+      });
+
+      // Ensure the rootDagNode is initialized if it was null
+      if (!rootDagNode) {
+        console.error("Failed to initialize root DAG node.");
+        throw new Error("DAG node initialization failed");
+      }
+
+      // Add the uploaded file link to the DAG node
+      rootDagNode.links.push(new Link(fileMetadata.cid, fileSize, filePathInDeveloperConsole + fileMetadata.name));
+
+      // Store the updated DAG node back to the bucket
+      await client.store(BigInt(bucketId), rootDagNode, { name: 'fs' });
+      console.log('The file has been indexed in the developer console.');
+    } catch (error) {
+      console.error('Error indexing file:', error);
     }
   };
 
@@ -137,5 +169,5 @@ export const useCere = () => {
     }
   };
 
-  return { createPrivateBucket, upload, share, access, download, isLoading };
-};
+    return { createPrivateBucket, upload, indexFile, share, access, download, isLoading };
+  };

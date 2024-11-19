@@ -2,19 +2,9 @@
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { web3Enable, web3Accounts } from '@polkadot/extension-dapp';
-import { InjectedExtension } from '@polkadot/extension-inject/types';
 import React, { createContext, useContext, useRef, useState, useCallback } from 'react';
-import { AccountInfo } from '@polkadot/types/interfaces';
-import type { AccountData } from '@polkadot/types/interfaces/balances';
-import { 
-    addLocalExtension, 
-    getLocalActiveAccount, 
-    setLocalActiveAccount, 
-    removeLocalActiveAccount, 
-    removeLocalExtension 
-} from '../lib/localStorage';
 import { Web3Signer } from '@cere-ddc-sdk/blockchain';
-import { encodeAddress, decodeAddress } from '@polkadot/util-crypto';
+import { DdcClient, MAINNET } from '@cere-ddc-sdk/ddc-client';
 import { NETWORKS } from '@/lib/cereNetwork';
 
 export interface ImportedAccount {
@@ -27,27 +17,19 @@ export interface ImportedAccount {
 export interface WalletContextInterface {
   connectWallet: () => Promise<{ address: string; network: string }>;
   disconnectWallet: () => Promise<void>;
-  getBalance: (address: string) => Promise<string>;
-  switchNetwork: (network: string) => Promise<void>;
-  signMessage: (message: string) => Promise<string>;
-  api: ApiPromise | null;
   activeAccount: string | null;
-  activeNetwork: string | null;
   accounts: ImportedAccount[];
   web3Signer: Web3Signer | null;
+  client: DdcClient | null;
 }
 
 const defaultContext: WalletContextInterface = {
   connectWallet: async () => ({ address: '', network: '' }),
   disconnectWallet: async () => {},
-  getBalance: async () => '0',
-  switchNetwork: async () => {},
-  signMessage: async () => '',
-  api: null,
   activeAccount: null,
-  activeNetwork: null,
   accounts: [],
   web3Signer: null,
+  client: null,
 };
 
 const WalletContext = createContext<WalletContextInterface>(defaultContext);
@@ -58,9 +40,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [api, setApi] = useState<ApiPromise | null>(null);
   const [accounts, setAccounts] = useState<ImportedAccount[]>([]);
   const [activeAccount, setActiveAccount] = useState<string | null>(null);
-  const [activeNetwork, setActiveNetwork] = useState<string | null>(null);
-  const [extensions, setExtensions] = useState<InjectedExtension[]>([]);
-  const [web3Signer, setWeb3Signer] = useState<Web3Signer | null>(null); // State for Web3Signer
+  const [web3Signer, setWeb3Signer] = useState<Web3Signer | null>(null);
+  const [client, setClient] = useState<DdcClient | null>(null);
 
   const accountsRef = useRef(accounts);
   const activeAccountRef = useRef(activeAccount);
@@ -75,7 +56,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       await api.isReady;
       
       setApi(api);
-      setActiveNetwork(networkKey);
       return api;
     } catch (error) {
       console.error('Failed to connect to network:', error);
@@ -89,10 +69,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (!injectedExtensions.length) {
         throw new Error('No extension found');
       }
-      
-      injectedExtensions.forEach(ext => addLocalExtension(ext.name));
-      setExtensions(injectedExtensions);
-  
+        
       const allAccounts = await web3Accounts();
       const formattedAccounts: ImportedAccount[] = allAccounts.map(account => ({
         address: account.address,
@@ -107,20 +84,24 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const network = 'cereMainnet';
       const accountToUse = formattedAccounts[0]?.address;
   
+      if (!api) {
+        await initializeApi('cereMainnet');
+      }
+
       if (accountToUse) {
         setActiveAccount(accountToUse);
         activeAccountRef.current = accountToUse;
-        setLocalActiveAccount(network, accountToUse);
         const activeExtension = injectedExtensions.find(ext => ext.signer && ext.signer.signRaw);
         if (activeExtension) {
-          const signerInstance = new Web3Signer();
+          const signerInstance = new Web3Signer({ autoConnect: true });
           await signerInstance.connect();
-          setWeb3Signer(signerInstance); 
+          setWeb3Signer(signerInstance);
+
+          const ddcClient = await DdcClient.create(signerInstance, MAINNET);
+          await ddcClient.connect();
+
+          setClient(ddcClient); 
         }
-      }
-  
-      if (!api) {
-        await initializeApi('cereMainnet');
       }
   
       return {
@@ -134,66 +115,25 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [api, activeAccount]);
 
   const disconnectWallet = useCallback(async () => {
-    if (api) {
-      await api.disconnect();
-      setApi(null);
-    }
-    
-    if (activeNetwork && activeAccount) {
-      removeLocalActiveAccount(activeNetwork);
-    }
-    
-    extensions.forEach(ext => removeLocalExtension(ext.name));
-    
     setActiveAccount(null);
     setAccounts([]);
-    setExtensions([]);
     setWeb3Signer(null);
-  }, [api, activeNetwork, activeAccount, extensions]);
-
-  const switchNetwork = useCallback(async (networkKey: string) => {
-    if (api) {
-      await api.disconnect();
-    }
-    await initializeApi(networkKey);
-  }, [api]);
-
-  const getBalance = useCallback(async (address: string): Promise<string> => {
-    if (!api) throw new Error('API not initialized');
     
-    try {
-        const result = await api.query.system.account<AccountInfo>(address);
-        const accountInfo = result as unknown as { data: AccountData };
-        return accountInfo.data.free.toString();
-    } catch (error) {
-      console.error('Failed to fetch balance:', error);
-      throw new Error('Failed to fetch balance');
+    if (client) {
+      await client.disconnect();
+      setClient(null);
     }
-  }, [api]);
-
-  const signMessage = useCallback(async (message: string) => {
-    if (!activeAccount || !web3Signer) {
-      throw new Error('No active account or Web3Signer available');
-    }
-
-    const signature = await web3Signer.sign(message);
-
-    return signature.toString();
-  }, [activeAccount, web3Signer]);
+  }, [client]);
 
   return (
     <WalletContext.Provider
       value={{
         connectWallet,
         disconnectWallet,
-        getBalance,
-        switchNetwork,
-        signMessage,
-        api,
         activeAccount,
-        activeNetwork,
         accounts,
-        web3Signer, // Provide the Web3Signer instance
+        web3Signer,
+        client,
       }}
     >
       {children}

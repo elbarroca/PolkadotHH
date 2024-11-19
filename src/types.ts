@@ -1,6 +1,6 @@
 export type FileMetadata = {
   cid: string;
-  buckedId: string;
+  bucketId: string;
   name: string;
   size: number;
   uploadedBy: string;
@@ -18,6 +18,7 @@ export type FolderMetadata = {
   files: FileMetadata[];
   parentFolder?: string;
 };
+
 
 export interface SharedFile {
   accessToken: string;

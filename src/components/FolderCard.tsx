@@ -1,5 +1,5 @@
-import { FolderMetadata } from '@/types';
-import { Folder, Trash } from 'lucide-react';
+import { FolderMetadata } from "@/types";
+import { Folder, Trash } from "lucide-react";
 
 interface FolderCardProps {
   folder: FolderMetadata;

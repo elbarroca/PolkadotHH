@@ -74,12 +74,8 @@ export const SharedDashboard = ({ onBackToMyDrive }: SharedDashboardProps) => {
           .map((file) => (
             <div key={file.id} className="relative group">
               <FileCard
-                id={file.id}
-                title={file.title}
-                imageUrl={file.imageUrl}
-                size={file.size}
-                description={file.description}
-                uploadedBy={file.sharedWith}
+                file={file}
+                onDelete={() => handleDelete(file.id)}
               />
               <div className="absolute top-2 right-2 z-30">
                 <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs">

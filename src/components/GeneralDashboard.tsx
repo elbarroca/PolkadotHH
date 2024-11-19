@@ -10,6 +10,7 @@ import { UploadModal } from './UploadModal';
 import { FolderModal } from './FolderModal';
 import React from 'react';
 import { MyDrive } from './MyDrive';
+import { useWallet } from '@/contexts/WalletProvider';
 
 interface GeneralDashboardProps {
   folders: FolderMetadata[];
@@ -23,11 +24,12 @@ export const GeneralDashboard: React.FC<GeneralDashboardProps> = ({ folders }) =
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentView, setCurrentView] = useState<'myDrive' | 'shared'>('myDrive');
+  const { activeAccount } = useWallet();
 
   const handleUploadComplete = async (metadata: FileMetadata) => {
     setIsUploadModalOpen(false);
-    const fileUrl = metadata.folder ? 
-      `https://cdn.mainnet.cere.network/${metadata.folder}/${metadata.cid}` :
+    const fileUrl = metadata.bucketId ? 
+      `https://cdn.mainnet.cere.network/${metadata.bucketId}/${metadata.cid}` :
       `https://cdn.mainnet.cere.network/${metadata.cid}`;
 
     toast({
@@ -60,10 +62,12 @@ export const GeneralDashboard: React.FC<GeneralDashboardProps> = ({ folders }) =
     await createFolder(newFolder);
   }, [createFolder]);
 
-  const handleFolderDelete = useCallback((folderName: string) => {
-    deleteFolder(folderName);
-    setCurrentFolder(null);
-  }, [deleteFolder]);
+  const handleFolderDelete = useCallback((folderName: FolderMetadata) => {
+    if (activeAccount) {
+      deleteFolder(activeAccount, folderName.name);
+      setCurrentFolder(null);
+    }
+  }, [deleteFolder, activeAccount]);
   
   return (
     <div className="flex flex-1 overflow-hidden">

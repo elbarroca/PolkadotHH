@@ -3,7 +3,7 @@ const nextConfig = {
   images: {
     domains: ['www.cryptoquizz.com'],
   },
-  reactStrictMode: true,
+  reactStrictMode: false,
 }
 
 module.exports = nextConfig 

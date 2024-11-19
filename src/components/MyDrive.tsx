@@ -10,7 +10,7 @@ interface MyDriveProps {
   currentFolder: FolderMetadata | null;
   folders: FolderMetadata[];
   onFolderClick: (folder: FolderMetadata | null) => void;
-  onFolderDelete: (folderName: string) => void;
+  onFolderDelete: (folder: FolderMetadata) => void; 
   onUploadClick: () => void;
   onCreateFolderClick: () => void;
 }
@@ -25,8 +25,8 @@ export const MyDrive: React.FC<MyDriveProps> = ({
 }) => {
   const { deleteFile } = useStorage();
 
-  const handleFileDelete = useCallback((cid: string) => {
-    deleteFile(cid);
+  const handleFileDelete = useCallback((file: FileMetadata) => {
+    deleteFile(file.cid); // Use file.cid to delete
   }, [deleteFile]);
 
   const displayedFolders = currentFolder
@@ -101,16 +101,14 @@ export const MyDrive: React.FC<MyDriveProps> = ({
             key={folder.name} 
             folder={folder}
             onClick={() => onFolderClick(folder)}
-            onDelete={() => onFolderDelete(folder.name)}
+            onDelete={() => onFolderDelete(folder)} // Pass the whole folder object
           />
         ))}
         {displayedFiles.map((file) => (
           <FileCard
             key={file.cid}
-            id={file.cid}
-            title={file.name}
-            size={file.size}
-            onDelete={() => handleFileDelete(file.cid)}
+            file={file}
+            onDelete={() => handleFileDelete(file)} // Pass the whole file object
           />
         ))}
       </div>

@@ -76,7 +76,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setIsLoading(true);
     
     try {
-      const fileMetadata = await uploadFile(file, addresses);
+      const fileMetadata = await uploadFile(file, addresses, selectedFolder);
       const updatedMetadata: FileMetadata = {
         ...fileMetadata,
         name: fileName || file.name,
