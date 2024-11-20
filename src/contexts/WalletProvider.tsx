@@ -6,6 +6,7 @@ import React, { createContext, useContext, useRef, useState, useCallback } from 
 import { Web3Signer } from '@cere-ddc-sdk/blockchain';
 import { DdcClient, MAINNET } from '@cere-ddc-sdk/ddc-client';
 import { NETWORKS } from '@/lib/cereNetwork';
+import AccountSelectionModal from '@/components/AccountSelection';
 
 export interface ImportedAccount {
   address: string;
@@ -15,7 +16,8 @@ export interface ImportedAccount {
 }
 
 export interface WalletContextInterface {
-  connectWallet: () => Promise<{ address: string; network: string }>;
+  setShowModal: (show: boolean) => void;
+  getAvailableAccounts: () => Promise<ImportedAccount[]>;
   disconnectWallet: () => Promise<void>;
   activeAccount: string | null;
   accounts: ImportedAccount[];
@@ -24,7 +26,8 @@ export interface WalletContextInterface {
 }
 
 const defaultContext: WalletContextInterface = {
-  connectWallet: async () => ({ address: '', network: '' }),
+  setShowModal: () => {},
+  getAvailableAccounts: async () => [],
   disconnectWallet: async () => {},
   activeAccount: null,
   accounts: [],
@@ -42,9 +45,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [activeAccount, setActiveAccount] = useState<string | null>(null);
   const [web3Signer, setWeb3Signer] = useState<Web3Signer | null>(null);
   const [client, setClient] = useState<DdcClient | null>(null);
-
-  const accountsRef = useRef(accounts);
-  const activeAccountRef = useRef(activeAccount);
+  const [showModal, setShowModal] = useState(false);
 
   const initializeApi = async (networkKey: string) => {
     const network = NETWORKS[networkKey];
@@ -63,51 +64,44 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const connectWallet = useCallback(async () => {
+  const getAvailableAccounts = useCallback(async (): Promise<ImportedAccount[]> => {
     try {
       const injectedExtensions = await web3Enable('PolkaDrive');
       if (!injectedExtensions.length) {
         throw new Error('No extension found');
       }
-        
+  
       const allAccounts = await web3Accounts();
-      const formattedAccounts: ImportedAccount[] = allAccounts.map(account => ({
+      const importedAccounts = allAccounts.map(account => ({
         address: account.address,
         name: account.meta.name || undefined,
         source: account.meta.source || 'unknown',
         signer: account.meta.source
       }));
-  
-      setAccounts(formattedAccounts);
-      accountsRef.current = formattedAccounts;
-  
-      const network = 'cereMainnet';
-      const accountToUse = formattedAccounts[0]?.address;
-  
+
+      setAccounts(importedAccounts);
+
+      return importedAccounts;
+    } catch (error) {
+      console.error('Failed to get accounts:', error);
+      throw error;
+    }
+  }, []);
+
+  const connectWallet = useCallback(async (selectedAccount: ImportedAccount) => {
+    try {
       if (!api) {
         await initializeApi('cereMainnet');
       }
 
-      if (accountToUse) {
-        setActiveAccount(accountToUse);
-        activeAccountRef.current = accountToUse;
-        const activeExtension = injectedExtensions.find(ext => ext.signer && ext.signer.signRaw);
-        if (activeExtension) {
-          const signerInstance = new Web3Signer();
-          await signerInstance.connect();
-          setWeb3Signer(signerInstance);
+      setActiveAccount(selectedAccount.address);
+      const signerInstance = new Web3Signer();
+      await signerInstance.connect();
+      setWeb3Signer(signerInstance);
+      const ddcClient = await DdcClient.create(signerInstance, MAINNET);
+      await ddcClient.connect();
 
-          const ddcClient = await DdcClient.create(signerInstance, MAINNET);
-          await ddcClient.connect();
-
-          setClient(ddcClient); 
-        }
-      }
-  
-      return {
-        address: accountToUse || '',
-        network: network
-      };
+      setClient(ddcClient); 
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       throw error;
@@ -128,7 +122,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   return (
     <WalletContext.Provider
       value={{
-        connectWallet,
+        getAvailableAccounts,
+        setShowModal,
         disconnectWallet,
         activeAccount,
         accounts,
@@ -137,6 +132,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }}
     >
       {children}
+      {showModal && (
+        <AccountSelectionModal
+          onSelect={connectWallet}
+          onClose={() => setShowModal(false)}
+        />
+      )}
     </WalletContext.Provider>
   );
 };

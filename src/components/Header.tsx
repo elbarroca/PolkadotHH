@@ -12,22 +12,11 @@ interface HeaderProps {
 }
 
 export const Header = ({ onSearch, searchQuery }: HeaderProps) => {
-  const { connectWallet, disconnectWallet, activeAccount } = useWallet();
-  const [isConnecting, setIsConnecting] = useState(false);
+  const { disconnectWallet, activeAccount, setShowModal } = useWallet();
+  const [isConnecting ] = useState(false);
 
   const truncateAddress = (address: string) => 
     `${address.slice(0, 6)}...${address.slice(-4)}`;
-
-  const handleConnect = async () => {
-    try {
-      setIsConnecting(true);
-      await connectWallet();
-    } catch (error) {
-      console.error('Failed to connect:', error);
-    } finally {
-      setIsConnecting(false);
-    }
-  };
 
   const handleDisconnect = async () => {
     try {
@@ -75,12 +64,12 @@ export const Header = ({ onSearch, searchQuery }: HeaderProps) => {
         </div>
       ) : (
         <Button
-          variant="default"
-          onClick={handleConnect}
-          disabled={isConnecting}
-          className="text-sm bg-emerald-500 hover:bg-emerald-600 text-white px-6 transform hover:scale-105 transition-all duration-200"
-        >
-          <Wallet className="mr-2 h-5 w-5" />
+        variant="default"
+        onClick={() => setShowModal(true)}
+        disabled={isConnecting}
+        className="text-sm bg-emerald-500 hover:bg-emerald-600 text-white px-6 transform hover:scale-105 transition-all duration-200"
+      >
+        <Wallet className="mr-2 h-5 w-5" />
           {isConnecting ? "Connecting..." : "Connect Wallet"}
         </Button>
       )}
