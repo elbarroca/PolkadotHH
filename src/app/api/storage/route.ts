@@ -26,8 +26,9 @@ export async function POST(request: Request) {
         console.log("Folder updated with file metadata");
       }
     
-      const fileCollectionRef = userDocRef.collection("files");
-      await fileCollectionRef.doc(fileMetadata.cid).set(fileMetadata);
+      // the files objects are inside the folders
+      //const fileCollectionRef = userDocRef.collection("files");
+      //await fileCollectionRef.doc(fileMetadata.cid).set(fileMetadata);
     } else {
       // Folder metadata
       const folderMetadata = metadata as FolderMetadata;
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to create metadata" }, { status: 500 });
   }
 }
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const walletAddress = searchParams.get("walletAddress");
@@ -53,21 +55,19 @@ export async function GET(request: Request) {
     const userDocRef = db.collection("users").doc(walletAddress);
     const foldersSnapshot = await userDocRef.collection("folders").get();
 
-    const folders = await Promise.all(
-      foldersSnapshot.docs.map(async (doc) => {
-        const folderData = doc.data() as FolderMetadata;
-        const filesSnapshot = await userDocRef.collection("files")
-          .where("folder", "==", folderData.name)
-          .get();
-        const files = filesSnapshot.docs.map((fileDoc) => fileDoc.data() as FileMetadata);
-        return { ...folderData, files };
+    const foldersWithFiles = await Promise.all(
+      foldersSnapshot.docs.map(async (folderDoc) => {
+        const folderData = folderDoc.data() as FolderMetadata;
+        return {
+          ...folderData,
+        };
       })
     );
 
-    return NextResponse.json(folders);
+    return NextResponse.json(foldersWithFiles);
   } catch (error) {
-    console.error("Error fetching folders:", error);
-    return NextResponse.json({ error: "Failed to fetch folders" }, { status: 500 });
+    console.error("Error retrieving folders and files:", error);
+    return NextResponse.json({ error: "Failed to retrieve folders and files" }, { status: 500 });
   }
 }
 

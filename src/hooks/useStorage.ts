@@ -42,12 +42,11 @@ export const useStorage = () => {
         throw new Error('Failed to create folder');
       }
 
-      const newFolder = await response.json();
-      setFolders((prevFolders) => [...prevFolders, newFolder]);
+      setFolders((prevFolders) => [...prevFolders, folderData]);
 
       toast({
         title: 'Success',
-        description: `Folder created: ${newFolder.name}`,
+        description: `Folder created: ${folderData.name}`,
       });
     } catch (error) {
       console.error('Error creating folder:', error);
@@ -75,11 +74,16 @@ export const useStorage = () => {
         throw new Error('Failed to create file metadata');
       }
 
-      const updatedFolder = await response.json();
       setFolders((prevFolders) =>
-        prevFolders.map((folder) =>
-          folder.name === updatedFolder.name ? updatedFolder : folder
-        )
+        prevFolders.map((folder) => {
+          if (folder.name === fileData.folder) {
+            return {
+              ...folder,
+              files: [...folder.files, fileData]
+            };
+          }
+          return folder;
+        })
       );
 
       toast({

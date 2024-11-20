@@ -93,7 +93,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         activeAccountRef.current = accountToUse;
         const activeExtension = injectedExtensions.find(ext => ext.signer && ext.signer.signRaw);
         if (activeExtension) {
-          const signerInstance = new Web3Signer({ autoConnect: true });
+          const signerInstance = new Web3Signer();
           await signerInstance.connect();
           setWeb3Signer(signerInstance);
 
