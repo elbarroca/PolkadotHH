@@ -1,22 +1,25 @@
-'use client';
-
-import { WalletProvider } from '../contexts/WalletProvider';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
-import { Toaster } from '@/components/ui/toaster';
-import { Header } from '@/components/Header';
+import { WalletProvider } from '@/components/wallet/WalletTest';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
+  title: 'PolkaDrive',
+  description: 'Decentralized File Storage',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <WalletProvider>
-          <div className="flex h-screen">
-            <div className="flex-1 flex flex-col">
-              <Header onSearch={() => {}} searchQuery="" />
-              <main className="flex-1">{children}</main>
-            </div>
-          </div>
-          <Toaster />
+          {children}
         </WalletProvider>
       </body>
     </html>

@@ -3,9 +3,11 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Users, Wallet, Lock, Layout } from 'lucide-react';
-
+import { useWallet } from '@/components/wallet/WalletTest';
 
 export const LandingPage = () => {
+  const { connectWallet, isLoading } = useWallet();
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center bg-gray-900 px-4">
       <div className="max-w-4xl mx-auto text-center space-y-8">
@@ -85,6 +87,14 @@ export const LandingPage = () => {
             ))}
           </div>
         </div>
+
+        <Button
+          onClick={connectWallet}
+          disabled={isLoading}
+          className="mt-8 bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-lg text-lg"
+        >
+          {isLoading ? 'Connecting...' : 'Connect Wallet to Start'}
+        </Button>
       </div>
     </div>
   );

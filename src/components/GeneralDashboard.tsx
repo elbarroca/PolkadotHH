@@ -68,6 +68,8 @@ export const GeneralDashboard: React.FC<GeneralDashboardProps> = ({ folders }) =
   return (
     <div className="flex flex-1 overflow-hidden">
       <Sidebar
+        folders={folders}
+        onFolderSelect={handleFolderClick}
         currentView={currentView}
         onViewChange={handleViewChange}
       />
