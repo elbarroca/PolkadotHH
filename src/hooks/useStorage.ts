@@ -5,10 +5,11 @@ import { FileMetadata, FolderMetadata } from '@/types';
 import ky from 'ky';
 import { useCere } from './useCere';
 import { toast } from './useToast';
+import { FileUri } from '@cere-ddc-sdk/ddc-client';
 
 export const useStorage = () => {
   const { web3Signer, activeAccount, client } = useWallet();
-  const { upload, indexFile, share, download, access, isLoading } = useCere();
+  const { upload, share, access, isLoading } = useCere();
 
   const [folders, setFolders] = useState<FolderMetadata[]>([]);
   const [sharedFiles, setSharedFiles] = useState<FileMetadata[]>([]);
@@ -215,16 +216,26 @@ export const useStorage = () => {
   };
 
   const downloadFile = async (fileMetadata: FileMetadata) => {
+    if (!client) throw new Error('Client not available');
+  
     try {
-      const url = await getDownloadURL(fileMetadata);
-      
-      // Create a temporary anchor element to trigger download
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileMetadata.name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const fileUri = new FileUri(BigInt(fileMetadata.bucketId), fileMetadata.cid);
+      const fileResponse = await client.read(fileUri);
+  
+      // Assuming the file is text-based, you can adjust this based on your file type
+      const textContent = await fileResponse.text();
+  
+      // Create a blob and download link
+      const blob = new Blob([textContent], { type: fileMetadata.mimeType });
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = fileMetadata.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+  
     } catch (error) {
       console.error("Error downloading file:", error);
       throw error;

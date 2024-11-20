@@ -17,31 +17,9 @@ interface FileCardProps {
 export const FileCard: React.FC<FileCardProps> = ({ file, onDelete }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const { getDownloadURL, downloadFile } = useStorage();
+  const { downloadFile } = useStorage();
   const { toast } = useToast();
-
-  useEffect(() => {
-    const loadPreviewUrl = async () => {
-      if (file.mimeType?.startsWith('image/')) {
-        try {
-          const url = await getDownloadURL(file);
-          setPreviewUrl(url);
-        } catch (error) {
-          console.error('Error loading preview URL:', error);
-          toast({
-            title: 'Error',
-            description: 'Failed to load preview',
-            variant: 'destructive',
-          });
-        }
-      }
-    };
-
-    loadPreviewUrl();
-  }, [file, getDownloadURL, toast]);
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,11 +41,6 @@ export const FileCard: React.FC<FileCardProps> = ({ file, onDelete }) => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handlePreview = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowPreview(true);
   };
 
   return (
@@ -105,14 +78,6 @@ export const FileCard: React.FC<FileCardProps> = ({ file, onDelete }) => {
               >
                 <Download className="h-4 w-4" />
               </button>
-              {file.mimeType?.startsWith('image/') && (
-                <button
-                  onClick={handlePreview}
-                  className="p-1 bg-blue-500 rounded-md text-white hover:bg-blue-600 transition-colors"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -128,17 +93,6 @@ export const FileCard: React.FC<FileCardProps> = ({ file, onDelete }) => {
       </div>
 
       {/* Modals */}
-      <FilePreview
-        isOpen={showPreview}
-        onClose={() => setShowPreview(false)}
-        file={{
-          title: file.name,
-          imageUrl: previewUrl,
-          size: file.size,
-          uploadedBy: file.uploadedBy,
-          mimeType: file.mimeType,
-        }}
-      />
 
       <ShareModal
         isOpen={isShareModalOpen}

@@ -146,28 +146,6 @@ export const useCere = () => {
     }
   };
 
-  const download = async (bucketId: BucketId, cid: string, token: string, fileName: string): Promise<void> => {
-    setIsLoading(true);
-    try {
-      const url = `https://cdn.mainnet.cere.network/${bucketId}/${cid}?token=${token}`;
-      const response = await fetch(url);
-      const data = await response.arrayBuffer();
-      const blob = new Blob([data]);
-      const downloadUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-    return { createPrivateBucket, upload, indexFile, share, access, download, isLoading };
+    return { createPrivateBucket, upload, indexFile, share, access, isLoading };
   };
