@@ -1,11 +1,17 @@
 import { FileMetadata, FolderMetadata } from '../types';
 
-export function getFilePath(file: FileMetadata, folders: FolderMetadata[]): string {
+export function getFilePath(
+  file: FileMetadata,
+  folders: FolderMetadata[],
+): string {
   const folderPath = getFolderPath(file.folder, folders);
   return `${folderPath}/${file.name}`;
 }
 
-function getFolderPath(folderName: string | undefined, folders: FolderMetadata[]): string {
+function getFolderPath(
+  folderName: string | undefined,
+  folders: FolderMetadata[],
+): string {
   if (!folderName) {
     return '';
   }

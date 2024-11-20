@@ -24,7 +24,7 @@ export const FileCard: React.FC<FileCardProps> = ({ file, onDelete }) => {
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsLoading(true);
-    
+
     try {
       await downloadFile(file);
       toast({
@@ -46,46 +46,44 @@ export const FileCard: React.FC<FileCardProps> = ({ file, onDelete }) => {
   return (
     <>
       <div
-        className="relative p-4 bg-gray-800 rounded-lg shadow-md transition-all duration-200 hover:bg-gray-700 group"
+        className='group relative rounded-lg bg-gray-800 p-4 shadow-md transition-all duration-200 hover:bg-gray-700'
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* File Card Content */}
-        <div className="flex items-center space-x-4">
-          <div className="p-3 bg-emerald-500 rounded-lg">
+        <div className='flex items-center space-x-4'>
+          <div className='rounded-lg bg-emerald-500 p-3'>
             {file.mimeType?.startsWith('image/') ? (
-              <Image className="h-6 w-6 text-white" src={''} alt={''} />
+              <Image className='h-6 w-6 text-white' src={''} alt={''} />
             ) : (
-              <FileText className="h-6 w-6 text-white" />
+              <FileText className='h-6 w-6 text-white' />
             )}
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-100 truncate">
+          <div className='min-w-0 flex-1'>
+            <h3 className='truncate text-lg font-semibold text-gray-100'>
               {file.name}
             </h3>
-            <p className="text-sm text-gray-400">
-              {formatFileSize(file.size)}
-            </p>
+            <p className='text-sm text-gray-400'>{formatFileSize(file.size)}</p>
           </div>
-          
+
           {/* Action Buttons */}
           {isHovered && (
-            <div className="absolute top-2 right-2 flex space-x-2">
+            <div className='absolute right-2 top-2 flex space-x-2'>
               <button
                 onClick={handleDownload}
                 disabled={isLoading}
-                className="p-1 bg-emerald-500 rounded-md text-white hover:bg-emerald-600 transition-colors"
+                className='rounded-md bg-emerald-500 p-1 text-white transition-colors hover:bg-emerald-600'
               >
-                <Download className="h-4 w-4" />
+                <Download className='h-4 w-4' />
               </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete();
                 }}
-                className="p-1 bg-red-500 rounded-md text-white hover:bg-red-600 transition-colors"
+                className='rounded-md bg-red-500 p-1 text-white transition-colors hover:bg-red-600'
               >
-                <Trash className="h-4 w-4" />
+                <Trash className='h-4 w-4' />
               </button>
             </div>
           )}

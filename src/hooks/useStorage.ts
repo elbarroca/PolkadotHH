@@ -18,89 +18,96 @@ export const useStorage = () => {
     const fetchFolders = async () => {
       if (activeAccount) {
         try {
-          const foldersResponse = await ky.get(`/api/storage?walletAddress=${activeAccount}`).json();
+          const foldersResponse = await ky
+            .get(`/api/storage?walletAddress=${activeAccount}`)
+            .json();
           setFolders(foldersResponse as FolderMetadata[]);
         } catch (error) {
           console.error('Error fetching folders:', error);
         }
       }
     };
-  
+
     fetchFolders();
   }, [activeAccount]);
 
-  const createFolder = useCallback(async (folderData: FolderMetadata) => {
-    try {
-      const response = await fetch('/api/storage', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(folderData),
-      });
+  const createFolder = useCallback(
+    async (folderData: FolderMetadata) => {
+      try {
+        const response = await fetch('/api/storage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(folderData),
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to create folder');
+        if (!response.ok) {
+          throw new Error('Failed to create folder');
+        }
+
+        setFolders((prevFolders) => [...prevFolders, folderData]);
+
+        toast({
+          title: 'Success',
+          description: `Folder created: ${folderData.name}`,
+        });
+      } catch (error) {
+        console.error('Error creating folder:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to create folder',
+          variant: 'destructive',
+        });
       }
+    },
+    [toast],
+  );
 
-      setFolders((prevFolders) => [...prevFolders, folderData]);
+  const createFile = useCallback(
+    async (fileData: FileMetadata) => {
+      if (!client) throw new Error('Client not available');
 
-      toast({
-        title: 'Success',
-        description: `Folder created: ${folderData.name}`,
-      });
-    } catch (error) {
-      console.error('Error creating folder:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create folder',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
+      try {
+        const response = await fetch('/api/storage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(fileData),
+        });
 
-  const createFile = useCallback(async (fileData: FileMetadata) => {
-    if (!client) throw new Error('Client not available');
+        if (!response.ok) {
+          throw new Error('Failed to create file metadata');
+        }
 
-    try {
-      const response = await fetch('/api/storage', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(fileData),
-      });
+        setFolders((prevFolders) =>
+          prevFolders.map((folder) => {
+            if (folder.name === fileData.folder) {
+              return {
+                ...folder,
+                files: [...folder.files, fileData],
+              };
+            }
+            return folder;
+          }),
+        );
 
-      if (!response.ok) {
-        throw new Error('Failed to create file metadata');
+        toast({
+          title: 'Success',
+          description: 'File metadata created successfully',
+        });
+      } catch (error) {
+        console.error('Error creating file metadata:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to create file metadata',
+          variant: 'destructive',
+        });
       }
-
-      setFolders((prevFolders) =>
-        prevFolders.map((folder) => {
-          if (folder.name === fileData.folder) {
-            return {
-              ...folder,
-              files: [...folder.files, fileData]
-            };
-          }
-          return folder;
-        })
-      );
-
-      toast({
-        title: 'Success',
-        description: 'File metadata created successfully',
-      });
-
-    } catch (error) {
-      console.error('Error creating file metadata:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create file metadata',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
+    },
+    [toast],
+  );
 
   const createPrivateBucket = async () => {
     try {
@@ -111,7 +118,11 @@ export const useStorage = () => {
     }
   };
 
-  const uploadFile = async (file: File, recipientAddresses: string[], selectedFolder: string) => {
+  const uploadFile = async (
+    file: File,
+    recipientAddresses: string[],
+    selectedFolder: string,
+  ) => {
     if (!activeAccount) throw new Error('Wallet address not available');
 
     try {
@@ -123,7 +134,11 @@ export const useStorage = () => {
         /// CHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
       }
 
-      const metadata = await upload(file, BigInt(bucketId!), recipientAddresses);
+      const metadata = await upload(
+        file,
+        BigInt(bucketId!),
+        recipientAddresses,
+      );
       metadata.folder = selectedFolder;
       await createFile(metadata);
 
@@ -137,42 +152,52 @@ export const useStorage = () => {
   const deleteFile = async (fileId: string) => {
     try {
       await ky.delete(`/api/files?fileId=${fileId}`);
-      setFolders((prevFolders) => prevFolders.filter((folder) => folder.name !== fileId));
+      setFolders((prevFolders) =>
+        prevFolders.filter((folder) => folder.name !== fileId),
+      );
     } catch (error) {
-      console.error("Error deleting file:", error);
+      console.error('Error deleting file:', error);
     }
   };
 
-  const deleteFolder = useCallback(async (walletAddress: string, folderPath: string) => {
-    try {
-      const response = await fetch(`/api/storage?walletAddress=${walletAddress}&path=${encodeURIComponent(folderPath)}`, {
-        method: 'DELETE',
-      });
+  const deleteFolder = useCallback(
+    async (walletAddress: string, folderPath: string) => {
+      try {
+        const response = await fetch(
+          `/api/storage?walletAddress=${walletAddress}&path=${encodeURIComponent(folderPath)}`,
+          {
+            method: 'DELETE',
+          },
+        );
 
-      if (!response.ok) {
-        throw new Error('Failed to delete folder');
+        if (!response.ok) {
+          throw new Error('Failed to delete folder');
+        }
+
+        setFolders((prevFolders) =>
+          prevFolders.filter((folder) => folder.name !== folderPath),
+        );
+
+        toast({
+          title: 'Success',
+          description: 'Folder deleted successfully',
+        });
+      } catch (error) {
+        console.error('Error deleting folder:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to delete folder',
+          variant: 'destructive',
+        });
       }
+    },
+    [toast],
+  );
 
-      setFolders((prevFolders) =>
-        prevFolders.filter((folder) => folder.name !== folderPath)
-      );
-
-      toast({
-        title: 'Success',
-        description: 'Folder deleted successfully',
-      });
-    } catch (error) {
-      console.error('Error deleting folder:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete folder',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-
-
-  const shareFile = async (fileMetadata: FileMetadata, recipientAddresses: string[]) => {
+  const shareFile = async (
+    fileMetadata: FileMetadata,
+    recipientAddresses: string[],
+  ) => {
     if (!activeAccount) throw new Error('Wallet address not available');
     if (!web3Signer) throw new Error('Web3 signer not available');
 
@@ -193,38 +218,43 @@ export const useStorage = () => {
 
   const getDownloadURL = async (fileMetadata: FileMetadata) => {
     if (!activeAccount) throw new Error('Wallet address not available');
-    
+
     try {
       // Get access token first
       const accessToken = await access(fileMetadata.bucketId, fileMetadata.cid);
-      
+
       // Then get download URL
       // TODO: i think this is wrong, we should be using the cid to get the download url
-      const response = await ky.get('/api/storage/download', {
-        searchParams: {
-          walletAddress: activeAccount,
-          cid: fileMetadata.cid,
-          accessToken
-        }
-      }).json<{ url: string }>();
+      const response = await ky
+        .get('/api/storage/download', {
+          searchParams: {
+            walletAddress: activeAccount,
+            cid: fileMetadata.cid,
+            accessToken,
+          },
+        })
+        .json<{ url: string }>();
 
       return response.url;
     } catch (error) {
-      console.error("Error getting download URL:", error);
+      console.error('Error getting download URL:', error);
       throw error;
     }
   };
 
   const downloadFile = async (fileMetadata: FileMetadata) => {
     if (!client) throw new Error('Client not available');
-  
+
     try {
-      const fileUri = new FileUri(BigInt(fileMetadata.bucketId), fileMetadata.cid);
+      const fileUri = new FileUri(
+        BigInt(fileMetadata.bucketId),
+        fileMetadata.cid,
+      );
       const fileResponse = await client.read(fileUri);
-  
+
       // Assuming the file is text-based, you can adjust this based on your file type
       const textContent = await fileResponse.text();
-  
+
       // Create a blob and download link
       const blob = new Blob([textContent], { type: fileMetadata.mimeType });
       const downloadUrl = URL.createObjectURL(blob);
@@ -235,9 +265,8 @@ export const useStorage = () => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(downloadUrl);
-  
     } catch (error) {
-      console.error("Error downloading file:", error);
+      console.error('Error downloading file:', error);
       throw error;
     }
   };

@@ -6,7 +6,10 @@ interface AccountSelectionModalProps {
   onClose: () => void;
 }
 
-const AccountSelectionModal: React.FC<AccountSelectionModalProps> = ({ onSelect, onClose }) => {
+const AccountSelectionModal: React.FC<AccountSelectionModalProps> = ({
+  onSelect,
+  onClose,
+}) => {
   const { getAvailableAccounts } = useWallet();
   const [accounts, setAccounts] = useState<ImportedAccount[]>([]);
 
@@ -23,7 +26,7 @@ const AccountSelectionModal: React.FC<AccountSelectionModalProps> = ({ onSelect,
     fetchAccounts();
   }, [getAvailableAccounts]);
 
-  const truncateAddress = (address: string) => 
+  const truncateAddress = (address: string) =>
     `${address.slice(0, 15)}...${address.slice(-15)}`;
 
   const handleSelect = async (account: ImportedAccount) => {
@@ -32,24 +35,28 @@ const AccountSelectionModal: React.FC<AccountSelectionModalProps> = ({ onSelect,
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-gray-900/95 border border-gray-800 shadow-xl shadow-emerald-500/10 rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 className="text-xl font-semibold mb-4 text-gray-100">Select an Account</h3>
-        <div className="space-y-2">
+    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
+      <div className='mx-4 w-full max-w-md rounded-lg border border-gray-800 bg-gray-900/95 p-6 shadow-xl shadow-emerald-500/10'>
+        <h3 className='mb-4 text-xl font-semibold text-gray-100'>
+          Select an Account
+        </h3>
+        <div className='space-y-2'>
           {accounts.map((account) => (
             <button
               key={account.address}
               onClick={() => handleSelect(account)}
-              className="w-full text-left p-3 rounded-lg hover:bg-gray-800 transition-colors text-gray-200"
+              className='w-full rounded-lg p-3 text-left text-gray-200 transition-colors hover:bg-gray-800'
             >
-              <strong className="block">{account.name}</strong>
-              <span className="text-sm text-gray-400 break-all">{truncateAddress(account.address)}</span>
+              <strong className='block'>{account.name}</strong>
+              <span className='break-all text-sm text-gray-400'>
+                {truncateAddress(account.address)}
+              </span>
             </button>
           ))}
         </div>
-        <button 
+        <button
           onClick={onClose}
-          className="mt-4 w-full py-2 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-gray-200"
+          className='mt-4 w-full rounded-lg bg-gray-800 px-4 py-2 text-gray-200 transition-colors hover:bg-gray-700'
         >
           Close
         </button>

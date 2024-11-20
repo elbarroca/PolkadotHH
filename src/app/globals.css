@@ -12,15 +12,15 @@
   .animate-fadeIn {
     animation: fadeIn 0.5s ease-out;
   }
-  
+
   .animate-slideIn {
     animation: slideIn 0.3s ease-out;
   }
-  
+
   .hover-trigger .hover-target {
     @apply opacity-0 transition-opacity duration-200;
   }
-  
+
   .hover-trigger:hover .hover-target {
     @apply opacity-100;
   }
@@ -58,7 +58,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-700 rounded-full;
+  @apply rounded-full bg-gray-700;
 }
 
 ::-webkit-scrollbar-thumb:hover {

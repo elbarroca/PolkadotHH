@@ -19,7 +19,7 @@ describe('File Upload and Encryption Process', () => {
     const encryptionKey = EncryptionService.generateEncryptionKey();
     const encryptedData = await EncryptionService.encryptFile(
       arrayBuffer,
-      encryptionKey
+      encryptionKey,
     );
 
     // Verify encryption result
@@ -27,13 +27,15 @@ describe('File Upload and Encryption Process', () => {
     expect(encryptedData).toHaveProperty('iv');
     expect(encryptedData).toHaveProperty('salt');
     expect(typeof encryptedData.data).toBe('string');
-    
+
     // Mock successful upload response
-    fetchMock.mockResponseOnce(JSON.stringify({
-      status: 'success',
-      cid: 'test-cid',
-      message: 'File uploaded successfully'
-    }));
+    fetchMock.mockResponseOnce(
+      JSON.stringify({
+        status: 'success',
+        cid: 'test-cid',
+        message: 'File uploaded successfully',
+      }),
+    );
 
     // Test upload
     const uploadResponse = await UploadService.uploadEncryptedFile(
@@ -42,8 +44,8 @@ describe('File Upload and Encryption Process', () => {
         name: file.name,
         size: file.size,
         type: file.type,
-        uploadedBy: '0x123...789'
-      }
+        uploadedBy: '0x123...789',
+      },
     );
 
     expect(uploadResponse.status).toBe('success');
@@ -59,13 +61,13 @@ describe('File Upload and Encryption Process', () => {
     const encryptionKey = EncryptionService.generateEncryptionKey();
     const encryptedData = await EncryptionService.encryptFile(
       arrayBuffer,
-      encryptionKey
+      encryptionKey,
     );
 
     // Decrypt
     const decryptedBuffer = await EncryptionService.decryptFile(
       encryptedData,
-      encryptionKey
+      encryptionKey,
     );
 
     // Convert back to string
@@ -83,7 +85,7 @@ describe('File Upload and Encryption Process', () => {
     const encryptionKey = EncryptionService.generateEncryptionKey();
     const encryptedData = await EncryptionService.encryptFile(
       arrayBuffer,
-      encryptionKey
+      encryptionKey,
     );
 
     expect(encryptedData).toHaveProperty('data');
@@ -97,19 +99,16 @@ describe('File Upload and Encryption Process', () => {
     const encryptedData = {
       data: 'test-data',
       iv: 'test-iv',
-      salt: 'test-salt'
+      salt: 'test-salt',
     };
 
     await expect(
-      UploadService.uploadEncryptedFile(
-        encryptedData,
-        {
-          name: 'test.txt',
-          size: 100,
-          type: 'text/plain',
-          uploadedBy: '0x123...789'
-        }
-      )
+      UploadService.uploadEncryptedFile(encryptedData, {
+        name: 'test.txt',
+        size: 100,
+        type: 'text/plain',
+        uploadedBy: '0x123...789',
+      }),
     ).rejects.toThrow('Failed to upload file');
   });
-}); 
+});

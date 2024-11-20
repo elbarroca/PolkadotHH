@@ -13,8 +13,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, fileName }) => {
   const zoomPluginInstance = zoomPlugin();
 
   return (
-    <div className="h-full w-full">
-      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+    <div className='h-full w-full'>
+      <Worker workerUrl='https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'>
         <Viewer
           fileUrl={fileUrl}
           plugins={[
@@ -24,7 +24,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, fileName }) => {
           ]}
           defaultScale={1}
           theme={{
-            theme: 'auto' // Supports light/dark mode
+            theme: 'auto', // Supports light/dark mode
           }}
         />
       </Worker>

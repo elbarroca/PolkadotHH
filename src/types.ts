@@ -19,7 +19,6 @@ export type FolderMetadata = {
   parentFolder?: string;
 };
 
-
 export interface SharedFile {
   accessToken: string;
   fileId: string;
@@ -63,7 +62,7 @@ export interface PDFViewerProps {
   fileName?: string;
 }
 
-export type SupportedMimeTypes = 
+export type SupportedMimeTypes =
   | 'application/pdf'
   | 'image/png'
   | 'image/jpeg'

@@ -12,7 +12,7 @@ describe('UploadModal Integration', () => {
     isOpen: true,
     onClose: jest.fn(),
     onUploadComplete: jest.fn(),
-    walletAddress: '0x123...789'
+    walletAddress: '0x123...789',
   };
 
   beforeEach(() => {
@@ -21,15 +21,17 @@ describe('UploadModal Integration', () => {
 
   it('should handle file selection and upload process', async () => {
     // Mock successful encryption and upload
-    (EncryptionService.generateEncryptionKey as jest.Mock).mockReturnValue('test-key');
+    (EncryptionService.generateEncryptionKey as jest.Mock).mockReturnValue(
+      'test-key',
+    );
     (EncryptionService.encryptFile as jest.Mock).mockResolvedValue({
       data: 'encrypted-data',
       iv: 'test-iv',
-      salt: 'test-salt'
+      salt: 'test-salt',
     });
     (UploadService.uploadEncryptedFile as jest.Mock).mockResolvedValue({
       status: 'success',
-      cid: 'test-cid'
+      cid: 'test-cid',
     });
 
     render(<UploadModal {...mockProps} />);
@@ -50,8 +52,8 @@ describe('UploadModal Integration', () => {
       expect(mockProps.onUploadComplete).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'test.txt',
-          cid: 'test-cid'
-        })
+          cid: 'test-cid',
+        }),
       );
     });
   });
@@ -63,20 +65,22 @@ describe('UploadModal Integration', () => {
     const largeFile = new File(
       [new ArrayBuffer(51 * 1024 * 1024)],
       'large.txt',
-      { type: 'text/plain' }
+      { type: 'text/plain' },
     );
     const input = screen.getByLabelText(/Choose a file/i);
 
     // Simulate file selection
     fireEvent.change(input, { target: { files: [largeFile] } });
 
-    expect(screen.getByText(/File size exceeds 50MB limit/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/File size exceeds 50MB limit/i),
+    ).toBeInTheDocument();
   });
 
   it('should handle encryption errors', async () => {
     // Mock encryption error
     (EncryptionService.encryptFile as jest.Mock).mockRejectedValue(
-      new Error('Encryption failed')
+      new Error('Encryption failed'),
     );
 
     render(<UploadModal {...mockProps} />);
@@ -93,4 +97,4 @@ describe('UploadModal Integration', () => {
       expect(screen.getByText(/Encryption failed/i)).toBeInTheDocument();
     });
   });
-}); 
+});

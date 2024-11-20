@@ -10,7 +10,7 @@ interface MyDriveProps {
   currentFolder: FolderMetadata | null;
   folders: FolderMetadata[];
   onFolderClick: (folder: FolderMetadata | null) => void;
-  onFolderDelete: (folder: FolderMetadata) => void; 
+  onFolderDelete: (folder: FolderMetadata) => void;
   onUploadClick: () => void;
   onCreateFolderClick: () => void;
 }
@@ -25,9 +25,12 @@ export const MyDrive: React.FC<MyDriveProps> = ({
 }) => {
   const { deleteFile } = useStorage();
 
-  const handleFileDelete = useCallback((file: FileMetadata) => {
-    deleteFile(file.cid); // Use file.cid to delete
-  }, [deleteFile]);
+  const handleFileDelete = useCallback(
+    (file: FileMetadata) => {
+      deleteFile(file.cid); // Use file.cid to delete
+    },
+    [deleteFile],
+  );
 
   const displayedFolders = currentFolder
     ? folders.filter((folder) => folder.parentFolder === currentFolder.name)
@@ -37,7 +40,10 @@ export const MyDrive: React.FC<MyDriveProps> = ({
     ? currentFolder.files || []
     : folders.flatMap((folder) => folder.files || []);
 
-  const getFolderPath = (folders: FolderMetadata[], currentFolder: FolderMetadata | null): FolderMetadata[] => {
+  const getFolderPath = (
+    folders: FolderMetadata[],
+    currentFolder: FolderMetadata | null,
+  ): FolderMetadata[] => {
     if (!currentFolder) {
       return [];
     }
@@ -47,7 +53,7 @@ export const MyDrive: React.FC<MyDriveProps> = ({
 
     while (folder) {
       path.unshift(folder);
-      folder = folders.find(f => f.name === folder?.parentFolder);
+      folder = folders.find((f) => f.name === folder?.parentFolder);
     }
 
     return path;
@@ -55,50 +61,54 @@ export const MyDrive: React.FC<MyDriveProps> = ({
 
   return (
     <>
-      <div className="mb-8 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <h2 className="text-3xl font-bold text-gray-100">
-            <a href="#" onClick={() => onFolderClick(null)}>My Drive</a>
+      <div className='mb-8 flex items-center justify-between'>
+        <div className='flex items-center space-x-2'>
+          <h2 className='text-3xl font-bold text-gray-100'>
+            <a href='#' onClick={() => onFolderClick(null)}>
+              My Drive
+            </a>
           </h2>
           {currentFolder && (
             <>
-              {getFolderPath(folders, currentFolder).map((folder, index, array) => (
-                <React.Fragment key={folder.name}>
-                  <span className="text-gray-400">/</span>
-                  <a 
-                    href="#" 
-                    onClick={() => onFolderClick(folder)}
-                    className="text-xl font-semibold text-gray-100 hover:text-emerald-400"
-                  >
-                    {folder.name}
-                  </a>
-                </React.Fragment>
-              ))}
+              {getFolderPath(folders, currentFolder).map(
+                (folder, index, array) => (
+                  <React.Fragment key={folder.name}>
+                    <span className='text-gray-400'>/</span>
+                    <a
+                      href='#'
+                      onClick={() => onFolderClick(folder)}
+                      className='text-xl font-semibold text-gray-100 hover:text-emerald-400'
+                    >
+                      {folder.name}
+                    </a>
+                  </React.Fragment>
+                ),
+              )}
             </>
           )}
         </div>
         <div>
           <Button
             onClick={onUploadClick}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 mr-4"
+            className='mr-4 transform rounded-lg bg-emerald-500 px-6 py-2 text-white transition-all duration-200 hover:scale-105 hover:bg-emerald-600'
           >
-            <Upload className="mr-2 h-5 w-5" />
+            <Upload className='mr-2 h-5 w-5' />
             Upload
           </Button>
           <Button
             onClick={onCreateFolderClick}
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
+            className='transform rounded-lg bg-green-500 px-6 py-2 text-white transition-all duration-200 hover:scale-105 hover:bg-green-600'
           >
-            <FolderPlus className="mr-2 h-5 w-5" />
+            <FolderPlus className='mr-2 h-5 w-5' />
             Create Folder
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 animate-fadeIn">
+      <div className='animate-fadeIn grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3'>
         {displayedFolders.map((folder) => (
           <FolderCard
-            key={folder.name} 
+            key={folder.name}
             folder={folder}
             onClick={() => onFolderClick(folder)}
             onDelete={() => onFolderDelete(folder)} // Pass the whole folder object

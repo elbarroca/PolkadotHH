@@ -4,6 +4,6 @@ const nextConfig = {
     domains: ['www.cryptoquizz.com'],
   },
   reactStrictMode: false,
-}
+};
 
-module.exports = nextConfig 
+module.exports = nextConfig;

@@ -2,7 +2,13 @@
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { web3Enable, web3Accounts } from '@polkadot/extension-dapp';
-import React, { createContext, useContext, useRef, useState, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useRef,
+  useState,
+  useCallback,
+} from 'react';
 import { Web3Signer } from '@cere-ddc-sdk/blockchain';
 import { DdcClient, MAINNET } from '@cere-ddc-sdk/ddc-client';
 import { NETWORKS } from '@/lib/cereNetwork';
@@ -39,7 +45,9 @@ const WalletContext = createContext<WalletContextInterface>(defaultContext);
 
 export const useWallet = () => useContext(WalletContext);
 
-export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [api, setApi] = useState<ApiPromise | null>(null);
   const [accounts, setAccounts] = useState<ImportedAccount[]>([]);
   const [activeAccount, setActiveAccount] = useState<string | null>(null);
@@ -55,7 +63,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const provider = new WsProvider(network.endpoints.rpc);
       const api = await ApiPromise.create({ provider });
       await api.isReady;
-      
+
       setApi(api);
       return api;
     } catch (error) {
@@ -64,19 +72,21 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const getAvailableAccounts = useCallback(async (): Promise<ImportedAccount[]> => {
+  const getAvailableAccounts = useCallback(async (): Promise<
+    ImportedAccount[]
+  > => {
     try {
       const injectedExtensions = await web3Enable('PolkaDrive');
       if (!injectedExtensions.length) {
         throw new Error('No extension found');
       }
-  
+
       const allAccounts = await web3Accounts();
-      const importedAccounts = allAccounts.map(account => ({
+      const importedAccounts = allAccounts.map((account) => ({
         address: account.address,
         name: account.meta.name || undefined,
         source: account.meta.source || 'unknown',
-        signer: account.meta.source
+        signer: account.meta.source,
       }));
 
       setAccounts(importedAccounts);
@@ -88,31 +98,34 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
-  const connectWallet = useCallback(async (selectedAccount: ImportedAccount) => {
-    try {
-      if (!api) {
-        await initializeApi('cereMainnet');
+  const connectWallet = useCallback(
+    async (selectedAccount: ImportedAccount) => {
+      try {
+        if (!api) {
+          await initializeApi('cereMainnet');
+        }
+
+        setActiveAccount(selectedAccount.address);
+        const signerInstance = new Web3Signer();
+        await signerInstance.connect();
+        setWeb3Signer(signerInstance);
+        const ddcClient = await DdcClient.create(signerInstance, MAINNET);
+        await ddcClient.connect();
+
+        setClient(ddcClient);
+      } catch (error) {
+        console.error('Failed to connect wallet:', error);
+        throw error;
       }
-
-      setActiveAccount(selectedAccount.address);
-      const signerInstance = new Web3Signer();
-      await signerInstance.connect();
-      setWeb3Signer(signerInstance);
-      const ddcClient = await DdcClient.create(signerInstance, MAINNET);
-      await ddcClient.connect();
-
-      setClient(ddcClient); 
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
-      throw error;
-    }
-  }, [api, activeAccount]);
+    },
+    [api, activeAccount],
+  );
 
   const disconnectWallet = useCallback(async () => {
     setActiveAccount(null);
     setAccounts([]);
     setWeb3Signer(null);
-    
+
     if (client) {
       await client.disconnect();
       setClient(null);

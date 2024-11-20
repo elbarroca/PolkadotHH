@@ -9,22 +9,24 @@ interface SidebarProps {
   onViewChange: (view: 'myDrive' | 'shared') => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
-  currentView, 
-  onViewChange, 
+export const Sidebar: React.FC<SidebarProps> = ({
+  currentView,
+  onViewChange,
 }) => {
-  const renderFolderTree = (folders: FolderMetadata[], parentFolderName?: string) => (
-    <ul className="ml-4">
+  const renderFolderTree = (
+    folders: FolderMetadata[],
+    parentFolderName?: string,
+  ) => (
+    <ul className='ml-4'>
       {folders
-        .filter(folder => folder.parentFolder === parentFolderName)
-        .map(folder => (
-          <li key={folder.name} className="mb-2">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400 hover:text-gray-200 cursor-pointer">
+        .filter((folder) => folder.parentFolder === parentFolderName)
+        .map((folder) => (
+          <li key={folder.name} className='mb-2'>
+            <div className='flex items-center justify-between'>
+              <span className='cursor-pointer text-gray-400 hover:text-gray-200'>
                 {folder.name}
               </span>
-              <div>
-              </div>
+              <div></div>
             </div>
             {renderFolderTree(folders, folder.name)}
           </li>
@@ -33,27 +35,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
 
   return (
-    <aside className="w-80 border-r border-gray-800 bg-gray-900">
-      <ScrollArea className="h-full">
-        <div className="space-y-6 py-8">
-          <div className="px-6">
-            <h2 className="text-xl font-semibold tracking-tight text-gray-200 mb-6">
+    <aside className='w-80 border-r border-gray-800 bg-gray-900'>
+      <ScrollArea className='h-full'>
+        <div className='space-y-6 py-8'>
+          <div className='px-6'>
+            <h2 className='mb-6 text-xl font-semibold tracking-tight text-gray-200'>
               Menu
             </h2>
-            <div className="space-y-2">
-              <Button 
+            <div className='space-y-2'>
+              <Button
                 variant={currentView === 'myDrive' ? 'default' : 'ghost'}
-                className="w-full justify-start text-gray-400 hover:text-gray-200 hover:bg-gray-800 py-2 px-4 rounded-md"
+                className='w-full justify-start rounded-md px-4 py-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200'
                 onClick={() => onViewChange('myDrive')}
               >
                 My Drive
               </Button>
-              <Button 
+              <Button
                 variant={currentView === 'shared' ? 'default' : 'ghost'}
-                className="w-full justify-start text-gray-400 hover:text-gray-200 hover:bg-gray-800 py-2 px-4 rounded-md"
+                className='w-full justify-start rounded-md px-4 py-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200'
                 onClick={() => onViewChange('shared')}
               >
-                <Users className="mr-2 h-5 w-5" />
+                <Users className='mr-2 h-5 w-5' />
                 Shared with me
               </Button>
             </div>

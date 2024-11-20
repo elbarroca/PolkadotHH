@@ -6,18 +6,18 @@ describe('DecryptionService', () => {
     // Create test data
     const originalContent = 'Test file content';
     const arrayBuffer = new TextEncoder().encode(originalContent).buffer;
-    
+
     // Generate encryption key and encrypt data
     const encryptionKey = EncryptionService.generateEncryptionKey();
     const encryptedData = await EncryptionService.encryptFile(
       arrayBuffer,
-      encryptionKey
+      encryptionKey,
     );
 
     // Decrypt the data
     const decryptedBuffer = await DecryptionService.decryptFile(
       encryptedData,
-      encryptionKey
+      encryptionKey,
     );
 
     // Convert back to string and compare
@@ -28,16 +28,16 @@ describe('DecryptionService', () => {
   it('should decrypt text correctly', async () => {
     const originalText = 'Hello, World!';
     const arrayBuffer = new TextEncoder().encode(originalText).buffer;
-    
+
     const encryptionKey = EncryptionService.generateEncryptionKey();
     const encryptedData = await EncryptionService.encryptFile(
       arrayBuffer,
-      encryptionKey
+      encryptionKey,
     );
 
     const decryptedText = await DecryptionService.decryptText(
       encryptedData,
-      encryptionKey
+      encryptionKey,
     );
 
     expect(decryptedText).toBe(originalText);
@@ -46,35 +46,35 @@ describe('DecryptionService', () => {
   it('should throw error with invalid encryption key', async () => {
     const originalContent = 'Test content';
     const arrayBuffer = new TextEncoder().encode(originalContent).buffer;
-    
+
     const encryptionKey = EncryptionService.generateEncryptionKey();
     const encryptedData = await EncryptionService.encryptFile(
       arrayBuffer,
-      encryptionKey
+      encryptionKey,
     );
 
     await expect(
-      DecryptionService.decryptFile(encryptedData, 'invalid-key')
+      DecryptionService.decryptFile(encryptedData, 'invalid-key'),
     ).rejects.toThrow(DecryptionError);
   });
 
   it('should verify decryption without throwing errors', async () => {
     const originalContent = 'Test content';
     const arrayBuffer = new TextEncoder().encode(originalContent).buffer;
-    
+
     const encryptionKey = EncryptionService.generateEncryptionKey();
     const encryptedData = await EncryptionService.encryptFile(
       arrayBuffer,
-      encryptionKey
+      encryptionKey,
     );
 
     const isValid = await DecryptionService.verifyDecryption(
       encryptedData,
-      encryptionKey
+      encryptionKey,
     );
     const isInvalid = await DecryptionService.verifyDecryption(
       encryptedData,
-      'wrong-key'
+      'wrong-key',
     );
 
     expect(isValid).toBe(true);
@@ -87,7 +87,7 @@ describe('DecryptionService', () => {
     const mockCreateElement = jest.fn().mockReturnValue({
       href: '',
       download: '',
-      click: jest.fn()
+      click: jest.fn(),
     });
     const mockAppendChild = jest.fn();
     const mockRemoveChild = jest.fn();
@@ -104,14 +104,14 @@ describe('DecryptionService', () => {
     const encryptionKey = EncryptionService.generateEncryptionKey();
     const encryptedData = await EncryptionService.encryptFile(
       arrayBuffer,
-      encryptionKey
+      encryptionKey,
     );
 
     await DecryptionService.decryptAndDownload(
       encryptedData,
       encryptionKey,
       'test.txt',
-      'text/plain'
+      'text/plain',
     );
 
     expect(mockCreateElement).toHaveBeenCalledWith('a');
@@ -120,4 +120,4 @@ describe('DecryptionService', () => {
     expect(global.URL.createObjectURL).toHaveBeenCalled();
     expect(global.URL.revokeObjectURL).toHaveBeenCalledWith(mockUrl);
   });
-}); 
+});
