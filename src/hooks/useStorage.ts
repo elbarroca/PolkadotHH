@@ -17,10 +17,12 @@ export const useStorage = () => {
   useEffect(() => {
     const fetchFolders = async () => {
       if (activeAccount) {
+        console.log(client)
         try {
           const foldersResponse = await ky
             .get(`/api/storage?walletAddress=${activeAccount}`)
             .json();
+            
           setFolders(foldersResponse as FolderMetadata[]);
         } catch (error) {
           console.error('Error fetching folders:', error);
@@ -66,8 +68,6 @@ export const useStorage = () => {
 
   const createFile = useCallback(
     async (fileData: FileMetadata) => {
-      if (!client) throw new Error('Client not available');
-
       try {
         const response = await fetch('/api/storage', {
           method: 'POST',
@@ -118,12 +118,13 @@ export const useStorage = () => {
     }
   };
 
-  const uploadFile = async (
+  const uploadFile = useCallback(async (
     file: File,
     recipientAddresses: string[],
     selectedFolder: string,
   ) => {
     if (!activeAccount) throw new Error('Wallet address not available');
+    if (!client) return null;
 
     try {
       let bucketId = localStorage.getItem('userBucketId');
@@ -140,6 +141,7 @@ export const useStorage = () => {
         recipientAddresses,
       );
       metadata.folder = selectedFolder;
+      console.log('metadata', metadata)
       await createFile(metadata);
 
       return metadata;
@@ -147,7 +149,7 @@ export const useStorage = () => {
       console.error('Error uploading file:', error);
       throw error;
     }
-  };
+  }, [activeAccount, client])
 
   const deleteFile = async (fileId: string) => {
     try {

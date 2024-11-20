@@ -55,7 +55,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
   const [client, setClient] = useState<DdcClient | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const initializeApi = async (networkKey: string) => {
+  const initializeApi = useCallback(async (networkKey: string) => {
     const network = NETWORKS[networkKey];
     if (!network) throw new Error('Network not supported');
 
@@ -70,7 +70,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error('Failed to connect to network:', error);
       throw error;
     }
-  };
+  }, []);
 
   const getAvailableAccounts = useCallback(async (): Promise<
     ImportedAccount[]
@@ -105,20 +105,26 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
           await initializeApi('cereMainnet');
         }
 
-        setActiveAccount(selectedAccount.address);
         const signerInstance = new Web3Signer();
         await signerInstance.connect();
+        setActiveAccount(selectedAccount.address);
         setWeb3Signer(signerInstance);
-        const ddcClient = await DdcClient.create(signerInstance, MAINNET);
-        await ddcClient.connect();
 
-        setClient(ddcClient);
+        if (!api) {
+          await initializeApi('cereMainnet');
+        }
+
+        if (!client) {
+          const ddcClient = await DdcClient.create(signerInstance, MAINNET);
+          await ddcClient.connect();
+          setClient(ddcClient);
+        }
       } catch (error) {
         console.error('Failed to connect wallet:', error);
         throw error;
       }
     },
-    [api, activeAccount],
+    [api, client],
   );
 
   const disconnectWallet = useCallback(async () => {

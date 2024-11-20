@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   File as DdcFile,
   AuthTokenOperation,
@@ -41,7 +41,7 @@ export const useCere = () => {
     }
   };
 
-  const upload = async (
+  const upload = useCallback(async (
     file: File,
     bucketId: BucketId,
     authorizedUsers: string[],
@@ -58,7 +58,7 @@ export const useCere = () => {
       const uploadedFileUri = await client.store(bucketIdBigInt, ddcFile);
 
       if (authorizedUsers.length > 0) {
-        await share(bucketId, uploadedFileUri.cid, authorizedUsers);
+        //await share(bucketId, uploadedFileUri.cid, authorizedUsers);
       }
 
       const fileMetadata = {
@@ -72,7 +72,7 @@ export const useCere = () => {
         authorizedUsers,
       };
 
-      indexFile(fileMetadata, bucketId.toString(), file.size);
+      await indexFile(fileMetadata, bucketId.toString(), file.size);
 
       return fileMetadata;
     } catch (error) {
@@ -80,8 +80,10 @@ export const useCere = () => {
       throw error;
     } finally {
       setIsLoading(false);
-    }
-  };
+      }
+    },
+    [client],
+  );
 
   const indexFile = async (
     fileMetadata: FileMetadata,
